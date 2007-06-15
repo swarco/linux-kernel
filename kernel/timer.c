@@ -1199,6 +1199,22 @@ static void update_wall_time(void)
 	update_vsyscall(&xtime, clock);
 }
 
+#define NSEC_PER_JIFFY_GC	((u32)((((u64)NSEC_PER_SEC))/HZ))
+static void update_wall_time_simple_gc(unsigned long ticks)
+{
+	do {
+		ticks--;
+		xtime.tv_nsec += NSEC_PER_JIFFY_GC;
+		time_interpolator_update(NSEC_PER_JIFFY_GC);
+		if (xtime.tv_nsec >= 1000000000) {
+			xtime.tv_nsec -= 1000000000;
+			xtime.tv_sec++;
+			second_overflow();
+		}
+	} while (ticks);
+}
+
+
 /*
  * Called from the timer interrupt handler to charge one tick to the current 
  * process.  user_tick is 1 if the tick is user time, 0 for system.
@@ -1297,7 +1313,8 @@ void run_local_timers(void)
  */
 static inline void update_times(unsigned long ticks)
 {
-	update_wall_time();
+	//update_wall_time();
+	update_wall_time_simple_gc(ticks);
 	calc_load(ticks);
 }
   
