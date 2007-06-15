@@ -67,6 +67,12 @@
 		cmp	r7, r3
 		beq	99f
 
+		@ Promwad Chub : 1181
+		mov	r3,	#(MACH_TYPE_CHUB & 0xff)
+		orr	r3, r3, #(MACH_TYPE_CHUB & 0xff00)
+		cmp	r7, r3
+		beq	99f
+
 		@ Unknown board, use the AT91RM9200DK board
 		@ mov	r7, #MACH_TYPE_AT91RM9200
 		mov	r7,	#(MACH_TYPE_AT91RM9200DK & 0xff)

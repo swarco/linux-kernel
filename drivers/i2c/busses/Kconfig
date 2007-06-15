@@ -81,6 +81,14 @@ config I2C_AT91
 	  This supports the use of the I2C interface on Atmel AT91
 	  processors.
 
+config I2C_AT91_CLOCKRATE
+	prompt "Atmel AT91 I2C/TWI clock-rate"
+	depends on I2C_AT91
+	int
+	default 100000
+	help
+	  Set the AT91 I2C/TWI clock-rate.
+
 config I2C_AU1550
 	tristate "Au1550/Au1200 SMBus interface"
 	depends on I2C && (SOC_AU1550 || SOC_AU1200)
@@ -544,6 +552,14 @@ config I2C_VOODOO3
 
 	  This driver can also be built as a module.  If so, the module
 	  will be called i2c-voodoo3.
+
+config I2C_PCA
+	tristate "PCA9564"
+	depends on I2C
+	select I2C_ALGOPCA
+	help
+	  This driver support the Philips PCA 9564 Parallel bus to I2C
+	  bus controller.
 
 config I2C_PCA_ISA
 	tristate "PCA9564 on an ISA bus"

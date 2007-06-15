@@ -527,6 +527,32 @@ void __init at91_init_leds(u8 cpu_led, u8 timer_led) {}
 #endif
 
 
+#if defined(CONFIG_NEW_LEDS)
+
+static struct platform_device at91_leds = {
+	.name		= "at91_leds",
+	.id		= -1,
+};
+
+void __init at91_gpio_leds(struct at91_gpio_led *leds, int nr)
+{
+	if (!nr)
+		return;
+
+	at91_leds.dev.platform_data = leds;
+
+	for ( ; nr; nr--, leds++) {
+		leds->index = nr;	/* first record stores number of leds */
+		at91_set_gpio_output(leds->gpio, (leds->flags & 1) == 0);
+	}
+
+	platform_device_register(&at91_leds);
+}
+#else
+void __init at91_gpio_leds(struct at91_gpio_led *leds, int nr) {}
+#endif
+
+
 /* --------------------------------------------------------------------
  *  UART
  * -------------------------------------------------------------------- */

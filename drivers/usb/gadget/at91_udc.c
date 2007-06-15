@@ -1804,7 +1804,7 @@ static int at91udc_suspend(struct platform_device *pdev, pm_message_t mesg)
 	 */
 	if ((!udc->suspended && udc->addr)
 			|| !wake
-			|| at91_suspend_entering_slow_clock()) {
+			|| clk_must_disable(udc->fclk)) {
 		pullup(udc, 0);
 		wake = 0;
 	} else

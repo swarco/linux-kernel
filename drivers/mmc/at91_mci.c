@@ -86,7 +86,7 @@
 
 #define AT91_MCI_ERRORS	(AT91_MCI_RINDE | AT91_MCI_RDIRE | AT91_MCI_RCRCE	\
 		| AT91_MCI_RENDE | AT91_MCI_RTOE | AT91_MCI_DCRCE		\
-		| AT91_MCI_DTOE | AT91_MCI_OVRE | AT91_MCI_UNRE)			
+		| AT91_MCI_DTOE | AT91_MCI_OVRE | AT91_MCI_UNRE)
 
 #define at91_mci_read(host, reg)	__raw_readl((host)->baseaddr + (reg))
 #define at91_mci_write(host, reg, val)	__raw_writel((val), (host)->baseaddr + (reg))
@@ -561,9 +561,7 @@ static void at91mci_completed_command(struct at91mci_host *host)
 	pr_debug("Status = %08X [%08X %08X %08X %08X]\n",
 		 status, cmd->resp[0], cmd->resp[1], cmd->resp[2], cmd->resp[3]);
 
-	if (status & (AT91_MCI_RINDE | AT91_MCI_RDIRE | AT91_MCI_RCRCE |
-			AT91_MCI_RENDE | AT91_MCI_RTOE | AT91_MCI_DCRCE |
-			AT91_MCI_DTOE | AT91_MCI_OVRE | AT91_MCI_UNRE)) {
+	if (status & AT91_MCI_ERRORS) {
 		if ((status & AT91_MCI_RCRCE) &&
 			((cmd->opcode == MMC_SEND_OP_COND) || (cmd->opcode == SD_APP_OP_COND))) {
 			cmd->error = MMC_ERR_NONE;
@@ -665,15 +663,15 @@ static irqreturn_t at91_mci_irq(int irq, void *devid)
 
 	int_status = at91_mci_read(host, AT91_MCI_SR);
 	int_mask = at91_mci_read(host, AT91_MCI_IMR);
-	
+
 	pr_debug("MCI irq: status = %08X, %08X, %08X\n", int_status, int_mask,
 		int_status & int_mask);
-	
+
 	int_status = int_status & int_mask;
 
 	if (int_status & AT91_MCI_ERRORS) {
 		completed = 1;
-		
+
 		if (int_status & AT91_MCI_UNRE)
 			pr_debug("MMC: Underrun error\n");
 		if (int_status & AT91_MCI_OVRE)
@@ -821,7 +819,7 @@ static int __init at91_mci_probe(struct platform_device *pdev)
 	mmc->f_min = 375000;
 	mmc->f_max = 25000000;
 	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-	mmc->caps = MMC_CAP_BYTEBLOCK;
+	mmc->caps = MMC_CAP_BYTEBLOCK | MMC_CAP_MULTIWRITE;
 
 	mmc->max_blk_size = 4095;
 	mmc->max_blk_count = mmc->max_req_size;
@@ -895,6 +893,8 @@ static int __init at91_mci_probe(struct platform_device *pdev)
 
 	mmc_add_host(mmc);
 
+	device_init_wakeup(&pdev->dev, 1);
+
 	/*
 	 * monitor card insertion/removal if we can
 	 */
@@ -924,6 +924,8 @@ static int __exit at91_mci_remove(struct platform_device *pdev)
 
 	host = mmc_priv(mmc);
 
+	device_init_wakeup(&pdev->dev, 0);
+
 	if (host->present != -1) {
 		free_irq(host->board->det_pin, host);
 		cancel_delayed_work(&host->mmc->detect);
@@ -951,7 +953,11 @@ static int __exit at91_mci_remove(struct platform_device *pdev)
 static int at91_mci_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct mmc_host *mmc = platform_get_drvdata(pdev);
+	struct at91mci_host *host = mmc_priv(mmc);
 	int ret = 0;
+
+	if (device_may_wakeup(&pdev->dev))
+		enable_irq_wake(host->board->det_pin);
 
 	if (mmc)
 		ret = mmc_suspend_host(mmc, state);
@@ -962,7 +968,11 @@ static int at91_mci_suspend(struct platform_device *pdev, pm_message_t state)
 static int at91_mci_resume(struct platform_device *pdev)
 {
 	struct mmc_host *mmc = platform_get_drvdata(pdev);
+	struct at91mci_host *host = mmc_priv(mmc);
 	int ret = 0;
+
+	if (device_may_wakeup(&pdev->dev))
+		disable_irq_wake(host->board->det_pin);
 
 	if (mmc)
 		ret = mmc_resume_host(mmc);

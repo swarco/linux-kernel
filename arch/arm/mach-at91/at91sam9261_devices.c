@@ -14,6 +14,9 @@
 #include <asm/mach/map.h>
 
 #include <linux/platform_device.h>
+#include <linux/fb.h>
+
+#include <video/atmel_lcdc.h>
 
 #include <asm/arch/board.h>
 #include <asm/arch/gpio.h>
@@ -430,9 +433,9 @@ void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices) 
  *  LCD Controller
  * -------------------------------------------------------------------- */
 
-#if defined(CONFIG_FB_AT91) || defined(CONFIG_FB_AT91_MODULE)
+#if defined(CONFIG_FB_ATMEL) || defined(CONFIG_FB_ATMEL_MODULE)
 static u64 lcdc_dmamask = 0xffffffffUL;
-static struct at91fb_info lcdc_data;
+static struct atmel_lcdfb_info lcdc_data;
 
 static struct resource lcdc_resources[] = {
 	[0] = {
@@ -455,7 +458,7 @@ static struct resource lcdc_resources[] = {
 };
 
 static struct platform_device at91_lcdc_device = {
-	.name		= "at91-fb",
+	.name		= "atmel_lcdfb",
 	.id		= 0,
 	.dev		= {
 				.dma_mask		= &lcdc_dmamask,
@@ -466,7 +469,7 @@ static struct platform_device at91_lcdc_device = {
 	.num_resources	= ARRAY_SIZE(lcdc_resources),
 };
 
-void __init at91_add_device_lcdc(struct at91fb_info *data)
+void __init at91_add_device_lcdc(struct atmel_lcdfb_info *data)
 {
 	if (!data) {
 		return;
@@ -499,7 +502,7 @@ void __init at91_add_device_lcdc(struct at91fb_info *data)
 	platform_device_register(&at91_lcdc_device);
 }
 #else
-void __init at91_add_device_lcdc(struct at91fb_info *data) {}
+void __init at91_add_device_lcdc(struct atmel_lcdfb_info *data) {}
 #endif
 
 
@@ -522,6 +525,32 @@ void __init at91_init_leds(u8 cpu_led, u8 timer_led)
 }
 #else
 void __init at91_init_leds(u8 cpu_led, u8 timer_led) {}
+#endif
+
+
+#if defined(CONFIG_NEW_LEDS)
+
+static struct platform_device at91_leds = {
+	.name		= "at91_leds",
+	.id		= -1,
+};
+
+void __init at91_gpio_leds(struct at91_gpio_led *leds, int nr)
+{
+	if (!nr)
+		return;
+
+	at91_leds.dev.platform_data = leds;
+
+	for ( ; nr; nr--, leds++) {
+		leds->index = nr;	/* first record stores number of leds */
+		at91_set_gpio_output(leds->gpio, (leds->flags & 1) == 0);
+	}
+
+	platform_device_register(&at91_leds);
+}
+#else
+void __init at91_gpio_leds(struct at91_gpio_led *leds, int nr) {}
 #endif
 
 

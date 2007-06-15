@@ -202,6 +202,7 @@
 
 /* --- PCA 9564 based algorithms */
 #define I2C_HW_A_ISA		0x1a0000 /* generic ISA Bus interface card */
+#define I2C_HW_A_PLAT		0x1a0001 /* generic platform_bus interface */
 
 /* --- ACPI Embedded controller algorithms                              */
 #define I2C_HW_ACPI_EC          0x1f0000

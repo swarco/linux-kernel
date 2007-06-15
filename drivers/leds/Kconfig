@@ -76,6 +76,13 @@ config LEDS_NET48XX
 	  This option enables support for the Soekris net4801 and net4826 error
 	  LED.
 
+config LEDS_AT91
+	tristate "LED support using AT91 GPIOs"
+	depends on LEDS_CLASS && ARCH_AT91 && !LEDS
+	help
+	  This option enables support for LEDs connected to GPIO lines
+	  on AT91-based boards.
+
 config LEDS_WRAP
 	tristate "LED Support for the WRAP series LEDs"
 	depends on LEDS_CLASS && SCx200_GPIO

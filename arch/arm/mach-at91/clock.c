@@ -32,6 +32,7 @@
 #include <asm/arch/cpu.h>
 
 #include "clock.h"
+#include "generic.h"
 
 
 /*
@@ -254,6 +255,23 @@ EXPORT_SYMBOL(clk_get_rate);
 
 /*------------------------------------------------------------------------*/
 
+#ifdef CONFIG_PM
+
+int clk_must_disable(struct clk *clk)
+{
+	if (!at91_suspend_entering_slow_clock())
+		return 0;
+
+	while (clk->parent)
+		clk = clk->parent;
+	return clk != &clk32k;
+}
+EXPORT_SYMBOL(clk_must_disable);
+
+#endif
+
+/*------------------------------------------------------------------------*/
+
 #ifdef CONFIG_AT91_PROGRAMMABLE_CLOCKS
 
 /*
@@ -375,6 +393,7 @@ static int at91_clk_show(struct seq_file *s, void *unused)
 	seq_printf(s, "PLLB = %8x\n", at91_sys_read(AT91_CKGR_PLLBR));
 
 	seq_printf(s, "MCKR = %8x\n", at91_sys_read(AT91_PMC_MCKR));
+#warning "Hard-coded PCK"
 	for (i = 0; i < 4; i++)
 		seq_printf(s, "PCK%d = %8x\n", i, at91_sys_read(AT91_PMC_PCKR(i)));
 	seq_printf(s, "SR   = %8x\n", sr = at91_sys_read(AT91_PMC_SR));

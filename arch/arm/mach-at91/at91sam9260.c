@@ -119,6 +119,11 @@ static struct clk spi1_clk = {
 	.pmc_mask	= 1 << AT91SAM9260_ID_SPI1,
 	.type		= CLK_TYPE_PERIPHERAL,
 };
+static struct clk ssc_clk = {
+	.name		= "ssc_clk",
+	.pmc_mask	= 1 << AT91SAM9260_ID_SSC,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
 static struct clk tc0_clk = {
 	.name		= "tc0_clk",
 	.pmc_mask	= 1 << AT91SAM9260_ID_TC0,
@@ -193,7 +198,7 @@ static struct clk *periph_clocks[] __initdata = {
 	&twi_clk,
 	&spi0_clk,
 	&spi1_clk,
-	// ssc
+	&ssc_clk,
 	&tc0_clk,
 	&tc1_clk,
 	&tc2_clk,
@@ -264,6 +269,33 @@ static void at91sam9260_reset(void)
 
 
 /* --------------------------------------------------------------------
+ *  Timer/Counter library initialization
+ * -------------------------------------------------------------------- */
+#ifdef CONFIG_ATMEL_TCLIB
+
+#include "tclib.h"
+
+static struct atmel_tcblock at91sam9260_tcblocks[] = {
+	[0] = {
+		.physaddr	= AT91SAM9260_BASE_TCB0,
+		.irq		= { AT91SAM9260_ID_TC0, AT91SAM9260_ID_TC1, AT91SAM9260_ID_TC2 },
+		.clk		= { &tc0_clk, &tc1_clk, &tc2_clk },
+	},
+	[1] = {
+		.physaddr	= AT91SAM9260_BASE_TCB1,
+		.irq		= { AT91SAM9260_ID_TC3, AT91SAM9260_ID_TC4, AT91SAM9260_ID_TC5 },
+		.clk		= { &tc3_clk, &tc4_clk, &tc5_clk },
+	},
+};
+
+#define at91sam9260_tc_init()	atmel_tc_init(at91sam9260_tcblocks, ARRAY_SIZE(at91sam9260_tcblocks))
+
+#else
+#define at91sam9260_tc_init()	do {} while(0)
+#endif
+
+
+/* --------------------------------------------------------------------
  *  AT91SAM9260 processor initialization
  * -------------------------------------------------------------------- */
 
@@ -310,6 +342,9 @@ void __init at91sam9260_initialize(unsigned long main_clock)
 
 	/* Register GPIO subsystem */
 	at91_gpio_init(at91sam9260_gpio, 3);
+
+	/* Initialize the Timer/Counter blocks */
+	at91sam9260_tc_init();
 }
 
 /* --------------------------------------------------------------------
@@ -322,30 +357,30 @@ void __init at91sam9260_initialize(unsigned long main_clock)
 static unsigned int at91sam9260_default_irq_priority[NR_AIC_IRQS] __initdata = {
 	7,	/* Advanced Interrupt Controller */
 	7,	/* System Peripherals */
-	0,	/* Parallel IO Controller A */
-	0,	/* Parallel IO Controller B */
-	0,	/* Parallel IO Controller C */
+	1,	/* Parallel IO Controller A */
+	1,	/* Parallel IO Controller B */
+	1,	/* Parallel IO Controller C */
 	0,	/* Analog-to-Digital Converter */
-	6,	/* USART 0 */
-	6,	/* USART 1 */
-	6,	/* USART 2 */
+	5,	/* USART 0 */
+	5,	/* USART 1 */
+	5,	/* USART 2 */
 	0,	/* Multimedia Card Interface */
-	4,	/* USB Device Port */
-	0,	/* Two-Wire Interface */
-	6,	/* Serial Peripheral Interface 0 */
-	6,	/* Serial Peripheral Interface 1 */
+	2,	/* USB Device Port */
+	6,	/* Two-Wire Interface */
+	5,	/* Serial Peripheral Interface 0 */
+	5,	/* Serial Peripheral Interface 1 */
 	5,	/* Serial Synchronous Controller */
 	0,
 	0,
 	0,	/* Timer Counter 0 */
 	0,	/* Timer Counter 1 */
 	0,	/* Timer Counter 2 */
-	3,	/* USB Host port */
+	2,	/* USB Host port */
 	3,	/* Ethernet */
 	0,	/* Image Sensor Interface */
-	6,	/* USART 3 */
-	6,	/* USART 4 */
-	6,	/* USART 5 */
+	5,	/* USART 3 */
+	5,	/* USART 4 */
+	5,	/* USART 5 */
 	0,	/* Timer Counter 3 */
 	0,	/* Timer Counter 4 */
 	0,	/* Timer Counter 5 */

@@ -24,6 +24,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/spi/spi.h>
+#include <linux/interrupt.h>
 #include <linux/mtd/physmap.h>
 
 #include <asm/hardware.h>
@@ -59,6 +60,7 @@ static void __init csb337_map_io(void)
 
 	/* Setup the LEDs */
 	at91_init_leds(AT91_PIN_PB0, AT91_PIN_PB1);
+	at91_set_gpio_output(AT91_PIN_PB2, 1);		/* third (unused) LED */
 
 	/* Setup the serial ports and console */
 	at91_init_serial(&csb337_uart_config);
@@ -149,6 +151,55 @@ static struct platform_device csb_flash = {
 	.num_resources	= ARRAY_SIZE(csb_flash_resources),
 };
 
+static struct at91_gpio_led csb337_leds[] = {
+	{
+		.name		= "led0",
+		.gpio		= AT91_PIN_PB0,
+		.trigger	= "heartbeat",
+	},
+	{
+		.name		= "led1",
+		.gpio		= AT91_PIN_PB1,
+		.trigger	= "timer",
+	},
+	{
+		.name		= "led2",
+		.gpio		= AT91_PIN_PB2,
+	}
+};
+
+#if defined(CONFIG_CSB300_WAKE_SW0) || defined(CONFIG_CSB300_WAKE_SW1)
+static irqreturn_t switch_irq_handler(int irq, void *context)
+{
+	return IRQ_HANDLED;
+}
+
+static inline void __init switch_irq_setup(int irq, char *name, unsigned long mode)
+{
+	int res;
+
+	res = request_irq(irq, switch_irq_handler, IRQF_SAMPLE_RANDOM | mode, name, NULL);
+	if (res == 0)
+		enable_irq_wake(irq);
+}
+
+static void __init csb300_switches(void)
+{
+#ifdef CONFIG_CSB300_WAKE_SW0
+	at91_set_A_periph(AT91_PIN_PB29, 1);		/* IRQ0 */
+	switch_irq_setup(AT91RM9200_ID_IRQ0, "csb300_sw0", IRQF_TRIGGER_FALLING);
+#endif
+#ifdef CONFIG_CSB300_WAKE_SW1
+	at91_set_gpio_input(AT91_PIN_PB28, 1);
+	at91_set_deglitch(AT91_PIN_PB28, 1);
+	switch_irq_setup(AT91_PIN_PB28, "csb300_sw1", IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING);
+#endif
+	/* there's also SW2 at PA21, GPIO or TIOA2 */
+}
+#else
+static void __init csb300_switches(void) {}
+#endif
+
 static void __init csb337_board_init(void)
 {
 	/* Serial */
@@ -168,8 +219,12 @@ static void __init csb337_board_init(void)
 	at91_add_device_spi(csb337_spi_devices, ARRAY_SIZE(csb337_spi_devices));
 	/* MMC */
 	at91_add_device_mmc(0, &csb337_mmc_data);
+	/* LEDS */
+	at91_gpio_leds(csb337_leds, ARRAY_SIZE(csb337_leds));
 	/* NOR flash */
 	platform_device_register(&csb_flash);
+	/* Switches on CSB300 */
+	csb300_switches();
 }
 
 MACHINE_START(CSB337, "Cogent CSB337")

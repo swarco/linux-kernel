@@ -480,7 +480,18 @@ void __init at91_add_device_i2c(void) {}
  *  SPI
  * -------------------------------------------------------------------- */
 
-#if defined(CONFIG_SPI_AT91) || defined(CONFIG_SPI_AT91_MODULE) || defined(CONFIG_AT91_SPI) || defined(CONFIG_AT91_SPI_MODULE)
+#if defined(CONFIG_AT91_SPI) || defined(CONFIG_AT91_SPI_MODULE)		/* legacy SPI driver */
+#define SPI_DEVNAME	"at91_spi"
+
+#elif defined(CONFIG_SPI_AT91) || defined(CONFIG_SPI_AT91_MODULE)	/* SPI bitbanging driver */
+#define SPI_DEVNAME	"at91_spi"
+
+#elif defined(CONFIG_SPI_ATMEL) || defined(CONFIG_SPI_ATMEL_MODULE)	/* new SPI driver */
+#define SPI_DEVNAME	"atmel_spi"
+
+#endif
+
+#ifdef SPI_DEVNAME
 static u64 spi_dmamask = 0xffffffffUL;
 
 static struct resource spi_resources[] = {
@@ -497,7 +508,7 @@ static struct resource spi_resources[] = {
 };
 
 static struct platform_device at91rm9200_spi_device = {
-	.name		= "at91_spi",
+	.name		= SPI_DEVNAME,
 	.id		= 0,
 	.dev		= {
 				.dma_mask		= &spi_dmamask,
@@ -603,6 +614,32 @@ void __init at91_init_leds(u8 cpu_led, u8 timer_led)
 }
 #else
 void __init at91_init_leds(u8 cpu_led, u8 timer_led) {}
+#endif
+
+
+#if defined(CONFIG_NEW_LEDS)
+
+static struct platform_device at91_leds = {
+	.name		= "at91_leds",
+	.id		= -1,
+};
+
+void __init at91_gpio_leds(struct at91_gpio_led *leds, int nr)
+{
+	if (!nr)
+		return;
+
+	at91_leds.dev.platform_data = leds;
+
+	for ( ; nr; nr--, leds++) {
+		leds->index = nr;	/* first record stores number of leds */
+		at91_set_gpio_output(leds->gpio, (leds->flags & 1) == 0);
+	}
+
+	platform_device_register(&at91_leds);
+}
+#else
+void __init at91_gpio_leds(struct at91_gpio_led *leds, int nr) {}
 #endif
 
 

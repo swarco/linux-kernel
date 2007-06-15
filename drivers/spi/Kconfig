@@ -54,6 +54,7 @@ comment "SPI Master Controller Drivers"
 config SPI_ATMEL
 	tristate "Atmel SPI Controller"
 	depends on (ARCH_AT91 || AVR32) && SPI_MASTER
+	select SPI_AT91_MANUAL_CS if ARCH_AT91RM9200
 	help
 	  This selects a driver for the Atmel SPI Controller, present on
 	  many AT32 (AVR32) and AT91 (ARM) chips.
@@ -81,6 +82,24 @@ config SPI_BUTTERFLY
 	  Butterfly <http://www.atmel.com/products/avr/butterfly>, an
 	  inexpensive battery powered microcontroller evaluation board.
 	  This same cable can be used to flash new firmware.
+
+config SPI_AT91
+	tristate "AT91RM9200 Bitbang SPI Master"
+	depends on SPI_MASTER && ARCH_AT91RM9200 && !SPI_ATMEL && EXPERIMENTAL
+	select SPI_BITBANG
+	select SPI_AT91_MANUAL_CS
+	help
+	  This is dumb PIO bitbanging driver for the Atmel AT91RM9200.
+	  The SPI_ATMEL driver will be its replacement, using the native
+	  SPI hardware and its DMA controller.
+
+config SPI_AT91_MANUAL_CS
+	bool
+	depends on ARCH_AT91RM9200
+	help
+	  Works around an AT91RM9200 problem whereby the SPI chip-select
+	  will be wrongly disabled.  The workaround uses those pins as
+	  GPIOs instead of letting the SPI controller manage them.
 
 config SPI_IMX
 	tristate "Freescale iMX SPI controller"

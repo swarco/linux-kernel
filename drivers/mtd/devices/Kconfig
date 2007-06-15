@@ -267,5 +267,11 @@ config MTD_DOCPROBE_55AA
 	  LinuxBIOS or if you need to recover a DiskOnChip Millennium on which
 	  you have managed to wipe the first block.
 
-endmenu
+config MTD_AT91_DATAFLASH
+	tristate "AT91RM9200 DataFlash AT45DBxxx (legacy driver)"
+	depends on MTD && ARCH_AT91RM9200 && AT91_SPI
+	help
+	  This enables access to the DataFlash (AT45DBxxx) on the AT91RM9200.
+	  If you have such a board, say 'Y'.
 
+endmenu

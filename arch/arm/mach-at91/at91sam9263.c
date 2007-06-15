@@ -87,6 +87,11 @@ static struct clk mmc1_clk = {
 	.pmc_mask	= 1 << AT91SAM9263_ID_MCI1,
 	.type		= CLK_TYPE_PERIPHERAL,
 };
+static struct clk can_clk = {
+	.name		= "can_clk",
+	.pmc_mask	= 1 << AT91SAM9263_ID_CAN,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
 static struct clk twi_clk = {
 	.name		= "twi_clk",
 	.pmc_mask	= 1 << AT91SAM9263_ID_TWI,
@@ -102,14 +107,44 @@ static struct clk spi1_clk = {
 	.pmc_mask	= 1 << AT91SAM9263_ID_SPI1,
 	.type		= CLK_TYPE_PERIPHERAL,
 };
+static struct clk ssc0_clk = {
+	.name		= "ssc0_clk",
+	.pmc_mask	= 1 << AT91SAM9263_ID_SSC0,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
+static struct clk ssc1_clk = {
+	.name		= "ssc1_clk",
+	.pmc_mask	= 1 << AT91SAM9263_ID_SSC1,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
+static struct clk ac97_clk = {
+	.name		= "ac97_clk",
+	.pmc_mask	= 1 << AT91SAM9263_ID_AC97C,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
 static struct clk tcb_clk = {
 	.name		= "tcb_clk",
 	.pmc_mask	= 1 << AT91SAM9263_ID_TCB,
 	.type		= CLK_TYPE_PERIPHERAL,
 };
+static struct clk pwmc_clk = {
+	.name		= "pwmc_clk",
+	.pmc_mask	= 1 << AT91SAM9263_ID_PWMC,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
 static struct clk macb_clk = {
 	.name		= "macb_clk",
 	.pmc_mask	= 1 << AT91SAM9263_ID_EMAC,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
+static struct clk dma_clk = {
+	.name		= "dma_clk",
+	.pmc_mask	= 1 << AT91SAM9263_ID_DMA,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
+static struct clk twodge_clk = {
+	.name		= "2dge_clk",
+	.pmc_mask	= 1 << AT91SAM9263_ID_2DGE,
 	.type		= CLK_TYPE_PERIPHERAL,
 };
 static struct clk udc_clk = {
@@ -142,20 +177,21 @@ static struct clk *periph_clocks[] __initdata = {
 	&usart2_clk,
 	&mmc0_clk,
 	&mmc1_clk,
-	// can
+	&can_clk,
 	&twi_clk,
 	&spi0_clk,
 	&spi1_clk,
-	// ssc0 .. ssc1
-	// ac97
+	&ssc0_clk,
+	&ssc1_clk,
+	&ac97_clk,
 	&tcb_clk,
-	// pwmc
+	&pwmc_clk,
 	&macb_clk,
-	// 2dge
+	&twodge_clk,
 	&udc_clk,
 	&isi_clk,
 	&lcdc_clk,
-	// dma
+	&dma_clk,
 	&ohci_clk,
 	// irq0 .. irq1
 };
@@ -237,6 +273,28 @@ static void at91sam9263_reset(void)
 
 
 /* --------------------------------------------------------------------
+ *  Timer/Counter library initialization
+ * -------------------------------------------------------------------- */
+#ifdef CONFIG_ATMEL_TCLIB
+
+#include "tclib.h"
+
+static struct atmel_tcblock at91sam9263_tcblocks[] = {
+	[0] = {
+		.physaddr	= AT91SAM9263_BASE_TCB0,
+		.irq		= { AT91SAM9263_ID_TCB, AT91SAM9263_ID_TCB, AT91SAM9263_ID_TCB },
+		.clk		= { &tcb_clk, &tcb_clk, &tcb_clk },
+	}
+};
+
+#define at91sam9263_tc_init()	atmel_tc_init(at91sam9263_tcblocks, ARRAY_SIZE(at91sam9263_tcblocks))
+
+#else
+#define at91sam9263_tc_init()	do {} while(0)
+#endif
+
+
+/* --------------------------------------------------------------------
  *  AT91SAM9263 processor initialization
  * -------------------------------------------------------------------- */
 
@@ -256,6 +314,9 @@ void __init at91sam9263_initialize(unsigned long main_clock)
 
 	/* Register GPIO subsystem */
 	at91_gpio_init(at91sam9263_gpio, 5);
+
+	/* Initialize the Timer/Counter blocks */
+	at91sam9263_tc_init();
 }
 
 /* --------------------------------------------------------------------
@@ -268,34 +329,34 @@ void __init at91sam9263_initialize(unsigned long main_clock)
 static unsigned int at91sam9263_default_irq_priority[NR_AIC_IRQS] __initdata = {
 	7,	/* Advanced Interrupt Controller (FIQ) */
 	7,	/* System Peripherals */
-	0,	/* Parallel IO Controller A */
-	0,	/* Parallel IO Controller B */
-	0,	/* Parallel IO Controller C, D and E */
+	1,	/* Parallel IO Controller A */
+	1,	/* Parallel IO Controller B */
+	1,	/* Parallel IO Controller C, D and E */
 	0,
 	0,
-	6,	/* USART 0 */
-	6,	/* USART 1 */
-	6,	/* USART 2 */
+	5,	/* USART 0 */
+	5,	/* USART 1 */
+	5,	/* USART 2 */
 	0,	/* Multimedia Card Interface 0 */
 	0,	/* Multimedia Card Interface 1 */
-	4,	/* CAN */
-	0,	/* Two-Wire Interface */
-	6,	/* Serial Peripheral Interface 0 */
-	6,	/* Serial Peripheral Interface 1 */
-	5,	/* Serial Synchronous Controller 0 */
-	5,	/* Serial Synchronous Controller 1 */
-	6,	/* AC97 Controller */
+	3,	/* CAN */
+	6,	/* Two-Wire Interface */
+	5,	/* Serial Peripheral Interface 0 */
+	5,	/* Serial Peripheral Interface 1 */
+	4,	/* Serial Synchronous Controller 0 */
+	4,	/* Serial Synchronous Controller 1 */
+	5,	/* AC97 Controller */
 	0,	/* Timer Counter 0, 1 and 2 */
 	0,	/* Pulse Width Modulation Controller */
 	3,	/* Ethernet */
 	0,
 	0,	/* 2D Graphic Engine */
-	3,	/* USB Device Port */
+	2,	/* USB Device Port */
 	0,	/* Image Sensor Interface */
 	3,	/* LDC Controller */
 	0,	/* DMA Controller */
 	0,
-	3,	/* USB Host port */
+	2,	/* USB Host port */
 	0,	/* Advanced Interrupt Controller (IRQ0) */
 	0,	/* Advanced Interrupt Controller (IRQ1) */
 };

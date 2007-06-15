@@ -63,6 +63,7 @@ static int at91_pm_prepare(suspend_state_t state)
  * Verify that all the clocks are correct before entering
  * slow-clock mode.
  */
+#warning "SAM9260 only has 3 programmable clocks."
 static int at91_pm_verify_clocks(void)
 {
 	unsigned long scsr;
@@ -104,20 +105,15 @@ static int at91_pm_verify_clocks(void)
 }
 
 /*
- * Call this from platform driver suspend() to see how deeply to suspend.
+ * This is called from clk_must_disable(), to see how deeply to suspend.
  * For example, some controllers (like OHCI) need one of the PLL clocks
  * in order to act as a wakeup source, and those are not available when
  * going into slow clock mode.
- *
- * REVISIT: generalize as clk_will_be_available(clk)?  Other platforms have
- * the very same problem (but not using at91 main_clk), and it'd be better
- * to add one generic API rather than lots of platform-specific ones.
  */
 int at91_suspend_entering_slow_clock(void)
 {
 	return (target_state == PM_SUSPEND_MEM);
 }
-EXPORT_SYMBOL(at91_suspend_entering_slow_clock);
 
 
 static void (*slow_clock)(void);
@@ -207,16 +203,23 @@ static struct pm_ops at91_pm_ops ={
 	.enter		= at91_pm_enter,
 };
 
+#ifdef CONFIG_AT91_SLOW_CLOCK
+extern void at91rm9200_slow_clock(void);
+extern u32 at91rm9200_slow_clock_sz;
+#endif
+
 static int __init at91_pm_init(void)
 {
-	printk("AT91: Power Management\n");
-
-#ifdef CONFIG_AT91_PM_SLOW_CLOCK
-	/* REVISIT allocations of SRAM should be dynamically managed.
+#ifdef CONFIG_AT91_SLOW_CLOCK
+	/*
+	 * REVISIT allocations of SRAM should be dynamically managed.
 	 * FIQ handlers and other components will want SRAM/TCM too...
 	 */
-	slow_clock = (void *) (AT91_VA_BASE_SRAM + (3 * SZ_4K));
+	slow_clock = (void *) (AT91_IO_VIRT_BASE - AT91RM9200_SRAM_SIZE + (3 * SZ_4K));
 	memcpy(slow_clock, at91rm9200_slow_clock, at91rm9200_slow_clock_sz);
+	printk("AT91: Power Management (with slow clock mode)\n");
+#else
+	printk("AT91: Power Management\n");
 #endif
 
 	/* Disable SDRAM low-power mode.  Cannot be used with self-refresh. */

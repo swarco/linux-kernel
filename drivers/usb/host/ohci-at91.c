@@ -299,7 +299,7 @@ ohci_hcd_at91_drv_suspend(struct platform_device *pdev, pm_message_t mesg)
 	 *
 	 * REVISIT: some boards will be able to turn VBUS off...
 	 */
-	if (at91_suspend_entering_slow_clock()) {
+	if (clk_must_disable(fclk)) {
 		ohci_usb_reset (ohci);
 		at91_stop_clock();
 	}

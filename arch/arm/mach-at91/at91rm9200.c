@@ -117,6 +117,21 @@ static struct clk pioD_clk = {
 	.pmc_mask	= 1 << AT91RM9200_ID_PIOD,
 	.type		= CLK_TYPE_PERIPHERAL,
 };
+static struct clk ssc0_clk = {
+	.name		= "ssc0_clk",
+	.pmc_mask	= 1 << AT91RM9200_ID_SSC0,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
+static struct clk ssc1_clk = {
+	.name		= "ssc1_clk",
+	.pmc_mask	= 1 << AT91RM9200_ID_SSC1,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
+static struct clk ssc2_clk = {
+	.name		= "ssc2_clk",
+	.pmc_mask	= 1 << AT91RM9200_ID_SSC2,
+	.type		= CLK_TYPE_PERIPHERAL,
+};
 static struct clk tc0_clk = {
 	.name		= "tc0_clk",
 	.pmc_mask	= 1 << AT91RM9200_ID_TC0,
@@ -161,7 +176,9 @@ static struct clk *periph_clocks[] __initdata = {
 	&udc_clk,
 	&twi_clk,
 	&spi_clk,
-	// ssc 0 .. ssc2
+	&ssc0_clk,
+	&ssc1_clk,
+	&ssc2_clk,
 	&tc0_clk,
 	&tc1_clk,
 	&tc2_clk,
@@ -250,6 +267,33 @@ static void at91rm9200_reset(void)
 
 
 /* --------------------------------------------------------------------
+ *  Timer/Counter library initialization
+ * -------------------------------------------------------------------- */
+#ifdef CONFIG_ATMEL_TCLIB
+
+#include "tclib.h"
+
+static struct atmel_tcblock at91rm9200_tcblocks[] = {
+	[0] = {
+		.physaddr	= AT91RM9200_BASE_TCB0,
+		.irq		= { AT91RM9200_ID_TC0, AT91RM9200_ID_TC1, AT91RM9200_ID_TC2 },
+		.clk		= { &tc0_clk, &tc1_clk, &tc2_clk },
+	},
+	[1] = {
+		.physaddr	= AT91RM9200_BASE_TCB1,
+		.irq		= { AT91RM9200_ID_TC3, AT91RM9200_ID_TC4, AT91RM9200_ID_TC5 },
+		.clk		= { &tc3_clk, &tc4_clk, &tc5_clk },
+	},
+};
+
+#define at91rm9200_tc_init()	atmel_tc_init(at91rm9200_tcblocks, ARRAY_SIZE(at91rm9200_tcblocks))
+
+#else
+#define at91rm9200_tc_init()	do {} while(0)
+#endif
+
+
+/* --------------------------------------------------------------------
  *  AT91RM9200 processor initialization
  * -------------------------------------------------------------------- */
 void __init at91rm9200_initialize(unsigned long main_clock, unsigned short banks)
@@ -271,6 +315,9 @@ void __init at91rm9200_initialize(unsigned long main_clock, unsigned short banks
 
 	/* Initialize GPIO subsystem */
 	at91_gpio_init(at91rm9200_gpio, banks);
+
+	/* Initialize the Timer/Counter blocks */
+	at91rm9200_tc_init();
 }
 
 
@@ -284,28 +331,28 @@ void __init at91rm9200_initialize(unsigned long main_clock, unsigned short banks
 static unsigned int at91rm9200_default_irq_priority[NR_AIC_IRQS] __initdata = {
 	7,	/* Advanced Interrupt Controller (FIQ) */
 	7,	/* System Peripherals */
-	0,	/* Parallel IO Controller A */
-	0,	/* Parallel IO Controller B */
-	0,	/* Parallel IO Controller C */
-	0,	/* Parallel IO Controller D */
-	6,	/* USART 0 */
-	6,	/* USART 1 */
-	6,	/* USART 2 */
-	6,	/* USART 3 */
+	1,	/* Parallel IO Controller A */
+	1,	/* Parallel IO Controller B */
+	1,	/* Parallel IO Controller C */
+	1,	/* Parallel IO Controller D */
+	5,	/* USART 0 */
+	5,	/* USART 1 */
+	5,	/* USART 2 */
+	5,	/* USART 3 */
 	0,	/* Multimedia Card Interface */
-	4,	/* USB Device Port */
-	0,	/* Two-Wire Interface */
-	6,	/* Serial Peripheral Interface */
-	5,	/* Serial Synchronous Controller 0 */
-	5,	/* Serial Synchronous Controller 1 */
-	5,	/* Serial Synchronous Controller 2 */
+	2,	/* USB Device Port */
+	6,	/* Two-Wire Interface */
+	5,	/* Serial Peripheral Interface */
+	4,	/* Serial Synchronous Controller 0 */
+	4,	/* Serial Synchronous Controller 1 */
+	4,	/* Serial Synchronous Controller 2 */
 	0,	/* Timer Counter 0 */
 	0,	/* Timer Counter 1 */
 	0,	/* Timer Counter 2 */
 	0,	/* Timer Counter 3 */
 	0,	/* Timer Counter 4 */
 	0,	/* Timer Counter 5 */
-	3,	/* USB Host port */
+	2,	/* USB Host port */
 	3,	/* Ethernet MAC */
 	0,	/* Advanced Interrupt Controller (IRQ0) */
 	0,	/* Advanced Interrupt Controller (IRQ1) */

@@ -13,6 +13,9 @@
 #include <asm/mach/map.h>
 
 #include <linux/platform_device.h>
+#include <linux/fb.h>
+
+#include <video/atmel_lcdc.h>
 
 #include <asm/arch/board.h>
 #include <asm/arch/gpio.h>
@@ -573,6 +576,180 @@ void __init at91_add_device_spi(struct spi_board_info *devices, int nr_devices) 
 
 
 /* --------------------------------------------------------------------
+ *  AC97
+ * -------------------------------------------------------------------- */
+
+#if defined(CONFIG_SND_AT91_AC97) || defined(CONFIG_SND_AT91_AC97_MODULE)
+static u64 ac97_dmamask = 0xffffffffUL;
+static struct atmel_ac97_data ac97_data;
+
+static struct resource ac97_resources[] = {
+	[0] = {
+		.start	= AT91SAM9263_BASE_AC97C,
+		.end	= AT91SAM9263_BASE_AC97C + SZ_16K - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= AT91SAM9263_ID_AC97C,
+		.end	= AT91SAM9263_ID_AC97C,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device at91sam9263_ac97_device = {
+	.name		= "ac97c",
+	.id		= 1,
+	.dev		= {
+				.dma_mask		= &ac97_dmamask,
+				.coherent_dma_mask	= 0xffffffff,
+				.platform_data		= &ac97_data,
+	},
+	.resource	= ac97_resources,
+	.num_resources	= ARRAY_SIZE(ac97_resources),
+};
+
+void __init at91_add_device_ac97(struct atmel_ac97_data *data)
+{
+	if (!data)
+		return;
+
+	at91_set_A_periph(AT91_PIN_PB0, 0);	/* AC97FS */
+	at91_set_A_periph(AT91_PIN_PB1, 0);	/* AC97CK */
+	at91_set_A_periph(AT91_PIN_PB2, 0);	/* AC97TX */
+	at91_set_A_periph(AT91_PIN_PB3, 0);	/* AC97RX */
+
+	/* reset */
+	if (data->reset_pin)
+		at91_set_gpio_output(data->reset_pin, 0);
+
+	ac97_data = *ek_data;
+	platform_device_register(&at91sam9263_ac97_device);
+}
+#else
+void __init at91_add_device_ac97(struct atmel_ac97_data *data) {}
+#endif
+
+
+/* --------------------------------------------------------------------
+ *  Image Sensor Interface
+ * -------------------------------------------------------------------- */
+
+#if defined(CONFIG_VIDEO_AT91_ISI) || defined(CONFIG_VIDEO_AT91_ISI_MODULE)
+
+struct resource isi_resources[] = {
+	[0] = {
+		.start	= AT91SAM9263_BASE_ISI,
+		.end	= AT91SAM9263_BASE_ISI + SZ_16K - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= AT91SAM9263_ID_ISI,
+		.end	= AT91SAM9263_ID_ISI,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device at91sam9263_isi_device = {
+	.name		= "at91_isi",
+	.id		= -1,
+	.resource	= isi_resources,
+	.num_resources	= ARRAY_SIZE(isi_resources),
+};
+
+void __init at91_add_device_isi(void)
+{
+	at91_set_A_periph(AT91_PIN_PE0, 0);	/* ISI_D0 */
+	at91_set_A_periph(AT91_PIN_PE1, 0);	/* ISI_D1 */
+	at91_set_A_periph(AT91_PIN_PE2, 0);	/* ISI_D2 */
+	at91_set_A_periph(AT91_PIN_PE3, 0);	/* ISI_D3 */
+	at91_set_A_periph(AT91_PIN_PE4, 0);	/* ISI_D4 */
+	at91_set_A_periph(AT91_PIN_PE5, 0);	/* ISI_D5 */
+	at91_set_A_periph(AT91_PIN_PE6, 0);	/* ISI_D6 */
+	at91_set_A_periph(AT91_PIN_PE7, 0);	/* ISI_D7 */
+	at91_set_A_periph(AT91_PIN_PE8, 0);	/* ISI_PCK */
+	at91_set_A_periph(AT91_PIN_PE9, 0);	/* ISI_HSYNC */
+	at91_set_A_periph(AT91_PIN_PE10, 0);	/* ISI_VSYNC */
+	at91_set_B_periph(AT91_PIN_PE11, 0);	/* ISI_MCK (PCK3) */
+	at91_set_B_periph(AT91_PIN_PE12, 0);	/* ISI_PD8 */
+	at91_set_B_periph(AT91_PIN_PE13, 0);	/* ISI_PD9 */
+	at91_set_B_periph(AT91_PIN_PE14, 0);	/* ISI_PD10 */
+	at91_set_B_periph(AT91_PIN_PE15, 0);	/* ISI_PD11 */
+}
+#else
+void __init at91_add_device_isi(void) {}
+#endif
+
+
+/* --------------------------------------------------------------------
+ *  LCD Controller
+ * -------------------------------------------------------------------- */
+
+#if defined(CONFIG_FB_ATMEL) || defined(CONFIG_FB_ATMEL_MODULE)
+static u64 lcdc_dmamask = 0xffffffffUL;
+static struct atmel_lcdfb_info lcdc_data;
+
+static struct resource lcdc_resources[] = {
+	[0] = {
+		.start	= AT91SAM9263_LCDC_BASE,
+		.end	= AT91SAM9263_LCDC_BASE + SZ_4K - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= AT91SAM9263_ID_LCDC,
+		.end	= AT91SAM9263_ID_LCDC,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device at91_lcdc_device = {
+	.name		= "atmel_lcdfb",
+	.id		= 0,
+	.dev		= {
+				.dma_mask		= &lcdc_dmamask,
+				.coherent_dma_mask	= 0xffffffff,
+				.platform_data		= &lcdc_data,
+	},
+	.resource	= lcdc_resources,
+	.num_resources	= ARRAY_SIZE(lcdc_resources),
+};
+
+void __init at91_add_device_lcdc(struct atmel_lcdfb_info *data)
+{
+	if (!data)
+		return;
+
+	at91_set_A_periph(AT91_PIN_PC1, 0);	/* LCDHSYNC */
+	at91_set_A_periph(AT91_PIN_PC2, 0);	/* LCDDOTCK */
+	at91_set_A_periph(AT91_PIN_PC3, 0);	/* LCDDEN */
+	at91_set_B_periph(AT91_PIN_PB9, 0);	/* LCDCC */
+	at91_set_A_periph(AT91_PIN_PC6, 0);	/* LCDD2 */
+	at91_set_A_periph(AT91_PIN_PC7, 0);	/* LCDD3 */
+	at91_set_A_periph(AT91_PIN_PC8, 0);	/* LCDD4 */
+	at91_set_A_periph(AT91_PIN_PC9, 0);	/* LCDD5 */
+	at91_set_A_periph(AT91_PIN_PC10, 0);	/* LCDD6 */
+	at91_set_A_periph(AT91_PIN_PC11, 0);	/* LCDD7 */
+	at91_set_A_periph(AT91_PIN_PC14, 0);	/* LCDD10 */
+	at91_set_A_periph(AT91_PIN_PC15, 0);	/* LCDD11 */
+	at91_set_A_periph(AT91_PIN_PC16, 0);	/* LCDD12 */
+	at91_set_B_periph(AT91_PIN_PC12, 0);	/* LCDD13 */
+	at91_set_A_periph(AT91_PIN_PC18, 0);	/* LCDD14 */
+	at91_set_A_periph(AT91_PIN_PC19, 0);	/* LCDD15 */
+	at91_set_A_periph(AT91_PIN_PC22, 0);	/* LCDD18 */
+	at91_set_A_periph(AT91_PIN_PC23, 0);	/* LCDD19 */
+	at91_set_A_periph(AT91_PIN_PC24, 0);	/* LCDD20 */
+	at91_set_B_periph(AT91_PIN_PC17, 0);	/* LCDD21 */
+	at91_set_A_periph(AT91_PIN_PC26, 0);	/* LCDD22 */
+	at91_set_A_periph(AT91_PIN_PC27, 0);	/* LCDD23 */
+
+	lcdc_data = *data;
+	platform_device_register(&at91_lcdc_device);
+}
+#else
+void __init at91_add_device_lcdc(struct atmel_lcdfb_info *data) {}
+#endif
+
+
+/* --------------------------------------------------------------------
  *  LEDs
  * -------------------------------------------------------------------- */
 
@@ -591,6 +768,32 @@ void __init at91_init_leds(u8 cpu_led, u8 timer_led)
 }
 #else
 void __init at91_init_leds(u8 cpu_led, u8 timer_led) {}
+#endif
+
+
+#if defined(CONFIG_NEW_LEDS)
+
+static struct platform_device at91_leds = {
+	.name		= "at91_leds",
+	.id		= -1,
+};
+
+void __init at91_gpio_leds(struct at91_gpio_led *leds, int nr)
+{
+	if (!nr)
+		return;
+
+	at91_leds.dev.platform_data = leds;
+
+	for ( ; nr; nr--, leds++) {
+		leds->index = nr;	/* first record stores number of leds */
+		at91_set_gpio_output(leds->gpio, (leds->flags & 1) == 0);
+	}
+
+	platform_device_register(&at91_leds);
+}
+#else
+void __init at91_gpio_leds(struct at91_gpio_led *leds, int nr) {}
 #endif
 
 
