@@ -419,14 +419,12 @@ static int rndis_bind(struct usbnet *dev, struct usb_interface *intf)
 
 	/* max transfer (in spec) is 0x4000 at full speed, but for
 	 * TX we'll stick to one Ethernet packet plus RNDIS framing.
-	 * For RX we handle drivers that zero-pad to end-of-packet.
 	 * Don't let userspace change these settings.
 	 */
 	net->hard_header_len += sizeof (struct rndis_data_hdr);
 	dev->hard_mtu = net->mtu + net->hard_header_len;
 
-	dev->rx_urb_size = dev->hard_mtu + (dev->maxpacket + 1);
-	dev->rx_urb_size &= ~(dev->maxpacket - 1);
+	dev->rx_urb_size = (dev->udev->speed == USB_SPEED_FULL) ? 16384 : 8192;
 	u.init->max_transfer_size = cpu_to_le32(dev->rx_urb_size);
 
 	net->change_mtu = NULL;
@@ -618,7 +616,7 @@ fill:
 
 static const struct driver_info	rndis_info = {
 	.description =	"RNDIS device",
-	.flags =	FLAG_ETHER | FLAG_FRAMING_RN,
+	.flags =	FLAG_ETHER | FLAG_FRAMING_RN | FLAG_NO_SETINT,
 	.bind =		rndis_bind,
 	.unbind =	rndis_unbind,
 	.status =	rndis_status,
