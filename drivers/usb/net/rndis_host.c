@@ -462,6 +462,13 @@ static int rndis_bind(struct usbnet *dev, struct usb_interface *intf)
 	u.get->len = ccpu2(48);
 	u.get->offset = ccpu2(20);
 
+	/* sleep a little bit until Windows Mobile Device is ready to answer
+	 * our command.
+	 * Some devices (tested HP iPAQ rx1950) will not response to
+	 * the ethernet MAC address command if we don't wait here.
+	 */
+	msleep(150);
+
 	retval = rndis_command(dev, u.header);
 	if (unlikely(retval < 0)) {
 		dev_err(&intf->dev, "rndis get ethaddr, %d\n", retval);
