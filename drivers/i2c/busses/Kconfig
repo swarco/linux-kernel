@@ -110,6 +110,14 @@ config I2C_ELEKTOR
 	  This support is also available as a module.  If so, the module 
 	  will be called i2c-elektor.
 
+config I2C_GPIO
+	tristate "GPIO-based bitbanging i2c driver"
+	depends on I2C && GENERIC_GPIO
+	select I2C_ALGOBIT
+	help
+	  This is a very simple bitbanging i2c driver utilizing the
+	  arch-neutral GPIO API to control the SCL and SDA lines.
+
 config I2C_HYDRA
 	tristate "CHRP Apple Hydra Mac I/O I2C interface"
 	depends on I2C && PCI && PPC_CHRP && EXPERIMENTAL
