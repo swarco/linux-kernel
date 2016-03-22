@@ -56,6 +56,7 @@ obj-$(CONFIG_LEDS) += $(led-y)
 # VGA support
 obj-$(CONFIG_FB_S1D13XXX)	+= ics1523.o
 
+obj-$(CONFIG_MACH_CCM2200)      += ccm2200/
 
 ifeq ($(CONFIG_PM_DEBUG),y)
 CFLAGS_pm.o += -DDEBUG

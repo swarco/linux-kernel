@@ -24,6 +24,26 @@
 #include <asm/io.h>
 #include <asm/arch/at91_dbgu.h>
 
+#ifdef CONFIG_MACH_CCM2200
+
+#define UART_BASE AT91RM9200_BASE_US2
+#define UART_SR   (UART_BASE+0x14)
+#define UART_THR   (UART_BASE+0x1c)
+
+static void putc(int c)
+{
+	while (!(__raw_readl(UART_SR) & AT91_DBGU_TXRDY))
+		barrier();
+	__raw_writel(c, UART_THR);
+}
+static inline void flush(void)
+{
+	/* wait for transmission to complete */
+	while (!(__raw_readl(UART_SR) & AT91_DBGU_TXEMPTY))
+		barrier();
+}
+
+#else
 /*
  * The following code assumes the serial port has already been
  * initialized by the bootloader.  If you didn't setup a port in
@@ -48,6 +68,8 @@ static inline void flush(void)
 	while (!(__raw_readl(sys + AT91_DBGU_SR) & AT91_DBGU_TXEMPTY))
 		barrier();
 }
+
+#endif
 
 #define arch_decomp_setup()
 

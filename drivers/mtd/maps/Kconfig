@@ -605,5 +605,19 @@ config MTD_PLATRAM
 
 	  This selection automatically selects the map_ram driver.
 
+config MTD_CCM2200_NOR
+	tristate "mapping for NOR Flash con CCM2200"
+	depends on MTD_CFI && MACH_CCM2200
+	help
+	  Map driver for the NOR Flash on 
+          SWARCO Traffic Systems CCM2200 board.
+
+config MTD_CCM2200_SRAM
+	tristate "mapping for battery backuped SRAM on CCM2200"
+	depends on MTD_CFI && MACH_CCM2200 
+	help
+	  Map driver for the battery backuped SRAM on 
+          SWARCO Traffic Systems CCM2200 board.
+
 endmenu
 

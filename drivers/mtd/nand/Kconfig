@@ -101,6 +101,12 @@ config MTD_NAND_PPCHAMELEONEVB
 	help
 	  This enables the NAND flash driver on the PPChameleon EVB Board.
 
+config MTD_NAND_CCM2200
+	tristate "NAND Chip on SWARCO Traffic Systems CCM2200"
+ 	depends on MTD_NAND
+	help
+	  This enables the driver for the internal NAND on the SWARCO Traffic Systems CCM 2200
+
 config MTD_NAND_S3C2410
 	tristate "NAND Flash support for S3C2410/S3C2440 SoC"
 	depends on ARCH_S3C2410 && MTD_NAND

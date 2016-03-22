@@ -45,6 +45,9 @@
 #include <asm/irq.h>
 
 #include "8250.h"
+#ifdef CONFIG_MACH_CCM2200
+#include <asm/arch/board-ccm2200.h>
+#endif
 
 /*
  * Configuration:
@@ -1205,6 +1208,9 @@ receive_chars(struct uart_8250_port *up, unsigned int *status)
 
 	do {
 		ch = serial_inp(up, UART_RX);
+#ifdef CONFIG_MACH_CCM2200
+                ccm2200_board_serial_trigger_led(&up->port.ccm2200_serial->rxLed);
+#endif
 		flag = TTY_NORMAL;
 		up->port.icount.rx++;
 
@@ -1274,6 +1280,10 @@ static void transmit_chars(struct uart_8250_port *up)
 	int count;
 
 	if (up->port.x_char) {
+#ifdef CONFIG_MACH_CCM2200
+                ccm2200_board_serial_trigger_led(&up->port.ccm2200_serial->txLed);
+		ccm2200_board_serial_rs485_tx(&up->port);
+#endif
 		serial_outp(up, UART_TX, up->port.x_char);
 		up->port.icount.tx++;
 		up->port.x_char = 0;
@@ -1289,6 +1299,10 @@ static void transmit_chars(struct uart_8250_port *up)
 	}
 
 	count = up->tx_loadsz;
+#ifdef CONFIG_MACH_CCM2200
+        ccm2200_board_serial_trigger_led(&up->port.ccm2200_serial->txLed);
+	ccm2200_board_serial_rs485_tx(&up->port);
+#endif
 	do {
 		serial_out(up, UART_TX, xmit->buf[xmit->tail]);
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
@@ -1836,7 +1850,8 @@ static void serial8250_shutdown(struct uart_port *port)
 	spin_lock_irqsave(&up->port.lock, flags);
 	if (up->port.flags & UPF_FOURPORT) {
 		/* reset interrupts on the AST Fourport board */
-		inb((up->port.iobase & 0xfe0) | 0x1f);
+          /* 2006-04-26 gc: fix arm compilation: inb_p */
+		inb_p((up->port.iobase & 0xfe0) | 0x1f);
 		up->port.mctrl |= TIOCM_OUT1;
 	} else
 		up->port.mctrl &= ~TIOCM_OUT2;
@@ -2273,6 +2288,9 @@ static struct uart_ops serial8250_pops = {
 };
 
 static struct uart_8250_port serial8250_ports[UART_NR];
+#ifdef CONFIG_MACH_CCM2200
+static struct ccm2200_board_serial ccm2200_board_serial[UART_NR];
+#endif
 
 static void __init serial8250_isa_init_ports(void)
 {
@@ -2300,6 +2318,10 @@ static void __init serial8250_isa_init_ports(void)
 		up->mcr_force = ALPHA_KLUDGE_MCR;
 
 		up->port.ops = &serial8250_pops;
+
+#ifdef CONFIG_MACH_CCM2200
+                ccm2200_board_serial_init(&up->port, &ccm2200_board_serial[i]);
+#endif
 	}
 
 	for (i = 0, up = serial8250_ports;

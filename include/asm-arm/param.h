@@ -18,6 +18,18 @@
 # define HZ		100
 #endif
 
+/* 2007-06-05 gc:  */
+#ifdef CONFIG_MACH_CCM2200
+#undef HZ
+//#  define HZ		200		/* Internal kernel timer frequency */
+//#  define HZ		250		/* Internal kernel timer frequency */
+//#  define HZ		333		/* Internal kernel timer frequency */
+//#  define HZ		256
+#  define HZ		1024
+//#  define HZ		1000
+#endif
+
+
 #define EXEC_PAGESIZE	4096
 
 #ifndef NOGROUP

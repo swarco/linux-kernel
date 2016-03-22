@@ -73,6 +73,19 @@
 		cmp	r7, r3
 		beq	99f
 
+		@ Promwad Chub : 1181
+		mov	r3,	#(MACH_TYPE_CHUB & 0xff)
+		orr	r3, r3, #(MACH_TYPE_CHUB & 0xff00)
+		cmp	r7, r3
+		beq	99f
+
+                /* 2006-04-26 gc: support CCM 2200 */
+       		@ SWARCO Traffic Systems GmbH CCM2200 board : 1014
+		mov	r3,	#(MACH_TYPE_CCM2200 & 0xff)
+		orr	r3, r3, #(MACH_TYPE_CCM2200 & 0xff00)
+		cmp	r7, r3
+		beq	99f
+
 		@ Unknown board, use the AT91RM9200DK board
 		@ mov	r7, #MACH_TYPE_AT91RM9200
 		mov	r7,	#(MACH_TYPE_AT91RM9200DK & 0xff)

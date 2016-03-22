@@ -276,6 +276,10 @@ struct uart_port {
 	struct device		*dev;			/* parent device */
 	unsigned char		hub6;			/* this should be in the 8250 driver */
 	unsigned char		unused[3];
+#ifdef CONFIG_MACH_CCM2200
+	struct ccm2200_board_serial *ccm2200_serial;
+#endif
+
 };
 
 /*
@@ -336,6 +340,9 @@ struct uart_info {
 
 struct module;
 struct tty_driver;
+#ifdef CONFIG_MACH_CCM2200
+struct ccm2200_board_serial;
+#endif
 
 struct uart_driver {
 	struct module		*owner;

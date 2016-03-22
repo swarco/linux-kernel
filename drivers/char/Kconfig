@@ -1087,5 +1087,21 @@ config AT91_SPIDEV
 	  The SPI driver gives user mode access to this serial
 	  bus on the AT91RM9200 processor.
 
+config CCM2200_I2C_EEPROM
+	tristate "I2C Eeprom char device (/dev/i2c_eeprom) for CCM2200 board"
+	depends on MACH_CCM2200 && I2C_AT91
+  	default y
+  	help
+  	  The I2C EEPROM driver gives user mode access to the built-in
+          serial EEPROM
+config CCM2200_I2C_EEPROM_IP
+	bool "Use I2C eeprom IP settings for autoconfiguration for CCM2200 board"
+	depends on CCM2200_I2C_EEPROM
+	default y
+	help
+	  Say yes if you want to use the IP addresses stored within the I2C
+	  EEPROM on the CCM2200. This will autoconfigure the module IP address,
+	  network mask, gateway, etc. 
+ 
 endmenu
 

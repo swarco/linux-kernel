@@ -45,3 +45,6 @@ series
 
 # cscope files
 cscope.*
+
+# CCM2200 cross compiler build script
+build-ccm2200.sh

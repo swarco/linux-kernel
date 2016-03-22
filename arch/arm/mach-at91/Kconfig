@@ -96,6 +96,12 @@ config MACH_CHUB
 	help
 	  Select this if you are using Promwad's Chub board.
 
+config MACH_CCM2200
+	bool "SWARCO Traffic Systems CCM2200 board"
+	depends on ARCH_AT91RM9200
+	help
+	  Select this if you are using the SWARCO Traffic Systems GmbH CCM2200 board
+
 endif
 
 # ----------------------------------------------------------
@@ -227,6 +233,7 @@ config AT91_SLOW_CLOCK
 	help
 	  Select this if you wish to put the CPU into slow clock mode
 	  while in the "Suspend to RAM" state, to save more power.
+
 
 endmenu
 

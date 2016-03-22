@@ -183,6 +183,14 @@ config PNX4008_WATCHDOG
 
 	  Say N if you are unsure.
 
+config CCM2200_WATCHDOG
+	tristate "CCM2200 board watchdog support"
+	depends on WATCHDOG && MACH_CCM2200
+	help
+	  Watchdog driver for CCM2200 board (MAX6751 Chip). This will
+          reboot your system when the timeout is reached.
+	  
+
 # X86 (i386 + ia64 + x86_64) Architecture
 
 config ACQUIRE_WDT
