@@ -422,6 +422,7 @@ static inline int BITRATE(struct usb_gadget *g)
 #define STRING_SUBSET			8
 #define STRING_RNDIS			9
 #define STRING_SERIALNUMBER		10
+#define STRING_MS_OS_DESCRIPTOR		0xee
 
 /* holds our biggest descriptor (or RNDIS response) */
 #define USB_BUFSIZ	256
@@ -1224,7 +1225,7 @@ eth_set_config (struct eth_dev *dev, unsigned number, gfp_t gfp_flags)
 		}
 
 		dev->config = number;
-		INFO (dev, "%s speed config #%d: %d mA, %s, using %s\n",
+		INFO (dev, "gc %s speed config #%d: %d mA, %s, using %s\n",
 				speed, number, power, driver_desc,
 				rndis_active(dev)
 					? "RNDIS"
@@ -1412,6 +1413,23 @@ eth_setup (struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			break;
 
 		case USB_DT_STRING:
+#ifdef CONFIG_USB_ETH_RNDIS
+			/* 2016-08-03 gc: check for Microsoft OS
+			 * string descriptor */
+			if ((wValue & 0xff) == STRING_MS_OS_DESCRIPTOR)  {
+#define		BMS_VENDOR_CODE 0x0d
+				static const u8 ms_os_string[18] = {
+					18, 3,
+ 					'M', 0, 'S', 0, 'F', 0, 'T', 0,
+					'1', 0, '0', 0, '0', 0,
+					BMS_VENDOR_CODE, 0x00
+				};
+				printk(KERN_INFO "gc: get descriptor ms_os_descriptor\n");
+				value = sizeof(ms_os_string);
+				memcpy(req->buf, &ms_os_string, value);
+				break;
+			}
+#endif	/* RNDIS */
 			value = usb_gadget_get_string (&stringtab,
 					wValue & 0xff, req->buf);
 			if (value >= 0)
@@ -1587,6 +1605,40 @@ done_set_intf:
 			/* else stalls ... spec says to avoid that */
 		}
 		break;
+
+	case BMS_VENDOR_CODE:
+		printk(KERN_INFO "gc: BMS_VENDOR_CODE\n");
+		{
+			/* MS OS Feature descriptor */
+			static const u8 ms_os_feature_dsc[] = {
+				0x28, 0x00, 0x00, 0x00, /* dwLength */
+				0x00, 0x01,		/* bcdVersion */
+				0x04, 0x00,		/* wIndex */
+				0x01,			/* bCount */
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00,	/* reserved */
+				0x00,			/* bFirstInterfaceNumber */
+				0x01,			/* reserved */
+
+				0x52, 0x4e, 0x44, 0x49,
+				0x53, 0x00, 0x00, 0x00, /* compatibleID ="RNDIS" */
+				0x35, 0x31, 0x36, 0x32,
+				0x30, 0x30, 0x31, 0x00, /* subCompatibleID = "5162001" => RNDIS 6.0 */
+				/* 
+                                 * 0x00, 0x00, 0x00, 0x00,
+				 * 0x00, 0x00, 0x00, 0x00, /\* subCompatibleID = no subcompatible ID  => RNDIS 5.0 *\/
+                                 */
+
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00		/* reserved  */
+				};
+
+			//assert(sizeof(ms_os_feature_dsc) == ms_os_feature_dsc[0]);
+			value = sizeof(ms_os_feature_dsc);
+			memcpy(req->buf, &ms_os_feature_dsc, value);
+		}
+		break;
+
 #endif	/* RNDIS */
 
 	default:
