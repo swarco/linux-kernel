@@ -91,7 +91,8 @@
 
 
 static volatile u8 *ccm2200_digital_out_virt = NULL;
-static u32 current_output = 0xf00;
+/* 2016-08-05 gc: changed to 000 for new initial state */
+static u32 current_output = 0x000; 
 static u32 current_leds = 0x000;
 
 
@@ -276,22 +277,34 @@ int __init ccm2200_gpio_init(void)
 
         /* prepare LED outputs and FG6 outputs on PIOD */
         {
-                static const struct at91_pio_pins ccm2200_out_pio_d = { 
+                static const struct at91_pio_pins ccm2200_led_out_pio_d = { 
                         AT91_PIO_BASE(AT91_PIOD), 
                         CCM2200_PIOD_LED_MASK | CCM2200_PIOD_OUT8_11_MASK 
+                };
+                static const struct at91_pio_pins ccm2200_out_pio_d = { 
+                        AT91_PIO_BASE(AT91_PIOD), CCM2200_PIOD_OUT8_11_MASK 
                 };
                 /* reset extern latch pin */
                 static const struct at91_pio_pins ccm2200_n_ext_reset = 
                         { AT91_PIO_BASE(AT91_PIOB), 1<<3 }; 
 
-                at91_pio_enable_open_drain_pins(&ccm2200_out_pio_d);  
+                at91_pio_enable_open_drain_pins(&ccm2200_led_out_pio_d);  
 		/* 2016-03-22 gc: set digital outs register to "1" => tri-state,
 		 *                so we keep the initial state set after
 		 *                CPU reset
 		 */
-		at91_pio_assign_pins(&ccm2200_out_pio_d, 
-				     CCM2200_PIOD_OUT8_11_MASK);
-                at91_pio_config_output_pins(&ccm2200_out_pio_d);
+		/* 
+                 * at91_pio_assign_pins(&ccm2200_led_out_pio_d, 
+		 * 		     CCM2200_PIOD_OUT8_11_MASK);
+                 */
+                /* 2016-08-05 gc: for compatibility with new CCMxCORE board's
+                 * reset state we will set the digital outputs to '0', so
+                 * we turn OFF the optocoupler's LED (and also MOSFET output)
+                 * => This enshures  an electrically safe initial state
+                 * of the system
+                 */
+                at91_pio_clear_all_pins(&ccm2200_out_pio_d);
+                at91_pio_config_output_pins(&ccm2200_led_out_pio_d);
                 /* assert reset signal to external latch */
                 at91_pio_clear_all_pins(&ccm2200_n_ext_reset);
                 at91_pio_config_output_pins(&ccm2200_n_ext_reset);
