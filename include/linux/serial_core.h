@@ -385,6 +385,9 @@ struct uart_port {
 	unsigned char		irq_wake;
 	unsigned char		unused[2];
 	void			*private_data;		/* generic platform data pointer */
+#ifdef CONFIG_MACH_CCM2200
+	struct ccm2200_board_serial *ccm2200_serial;
+#endif
 };
 
 static inline int serial_port_in(struct uart_port *up, int offset)

@@ -45,6 +45,9 @@
 
 #include <asm/mach/serial_at91.h>
 #include <mach/board.h>
+#ifdef CONFIG_MACH_CCM2200
+#include <mach/board-ccm2200.h>
+#endif
 
 #ifdef CONFIG_ARM
 #include <mach/cpu.h>
@@ -158,6 +161,9 @@ struct atmel_uart_port {
 	unsigned int		tx_done_mask;
 };
 
+#ifdef CONFIG_MACH_CCM2200
+static struct ccm2200_board_serial ccm2200_board_serial[ATMEL_MAX_UART];
+#endif
 static struct atmel_uart_port atmel_ports[ATMEL_MAX_UART];
 static DECLARE_BITMAP(atmel_ports_in_use, ATMEL_MAX_UART);
 
@@ -492,6 +498,9 @@ static void atmel_rx_chars(struct uart_port *port)
 	status = UART_GET_CSR(port);
 	while (status & ATMEL_US_RXRDY) {
 		ch = UART_GET_CHAR(port);
+#ifdef CONFIG_MACH_CCM2200
+                ccm2200_board_serial_trigger_led(&port->ccm2200_serial->rxLed);
+#endif
 
 		/*
 		 * note that the error handling code is
@@ -539,6 +548,10 @@ static void atmel_tx_chars(struct uart_port *port)
 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
 
 	if (port->x_char && UART_GET_CSR(port) & atmel_port->tx_done_mask) {
+#ifdef CONFIG_MACH_CCM2200
+                ccm2200_board_serial_trigger_led(&port->ccm2200_serial->txLed);
+		ccm2200_board_serial_rs485_tx(port);
+#endif
 		UART_PUT_CHAR(port, port->x_char);
 		port->icount.tx++;
 		port->x_char = 0;
@@ -546,6 +559,13 @@ static void atmel_tx_chars(struct uart_port *port)
 	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
 		return;
 
+#ifdef CONFIG_MACH_CCM2200
+        if (UART_GET_CSR(port) & ATMEL_US_TXRDY) {
+                 ccm2200_board_serial_trigger_led(&port->ccm2200_serial->txLed);
+		 ccm2200_board_serial_rs485_tx(port);
+
+        }
+#endif
 	while (UART_GET_CSR(port) & atmel_port->tx_done_mask) {
 		UART_PUT_CHAR(port, xmit->buf[xmit->tail]);
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
@@ -1430,6 +1450,15 @@ static void __devinit atmel_of_init_port(struct atmel_uart_port *atmel_port,
 	u32 rs485_delay[2];
 
 	/* DMA/PDC usage specification */
+#ifdef CONFIG_MACH_CCM2200
+        /* 
+	 *     @todo 2007-06-05 gc: 	
+	 *     PDC DMA transmit / receives not supported by CCM2200
+	 *     board specific serial handling
+	 */
+	atmel_port->use_dma_rx = false;
+	atmel_port->use_dma_tx = false;
+#else
 	if (of_get_property(np, "atmel,use-dma-rx", NULL))
 		atmel_port->use_dma_rx	= 1;
 	else
@@ -1438,6 +1467,7 @@ static void __devinit atmel_of_init_port(struct atmel_uart_port *atmel_port,
 		atmel_port->use_dma_tx	= 1;
 	else
 		atmel_port->use_dma_tx	= 0;
+#endif
 
 	/* rs485 properties */
 	if (of_property_read_u32_array(np, "rs485-rts-delay",
@@ -1512,6 +1542,9 @@ static void __devinit atmel_init_port(struct atmel_uart_port *atmel_port,
 	} else {
 		atmel_port->tx_done_mask = ATMEL_US_TXRDY;
 	}
+#ifdef CONFIG_MACH_CCM2200
+	ccm2200_board_serial_init(port, &ccm2200_board_serial[pdev->id]);
+#endif
 }
 
 /*
@@ -1527,7 +1560,10 @@ void __init atmel_register_uart_fns(struct atmel_port_fns *fns)
 		atmel_pops.set_mctrl = fns->set_mctrl;
 	atmel_open_hook		= fns->open;
 	atmel_close_hook	= fns->close;
+	/* 2010-06-09 gc: check if function pointers are not NULL */
+	if (fns->pm)
 	atmel_pops.pm		= fns->pm;
+	if (fns->set_wake)
 	atmel_pops.set_wake	= fns->set_wake;
 }
 
@@ -1538,6 +1574,13 @@ static void atmel_console_putchar(struct uart_port *port, int ch)
 {
 	while (!(UART_GET_CSR(port) & ATMEL_US_TXRDY))
 		cpu_relax();
+#ifdef CONFIG_MACH_CCM2200
+	if (port->ccm2200_serial) {
+                  ccm2200_board_serial_trigger_led(&port->ccm2200_serial->txLed);
+		  ccm2200_board_serial_rs485_tx(port);
+	}
+#endif
+
 	UART_PUT_CHAR(port, ch);
 }
 
@@ -1856,6 +1899,10 @@ static int __devexit atmel_serial_remove(struct platform_device *pdev)
 	struct uart_port *port = platform_get_drvdata(pdev);
 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
 	int ret = 0;
+
+#ifdef CONFIG_MACH_CCM2200
+	ccm2200_board_serial_remove(port);
+#endif
 
 	device_init_wakeup(&pdev->dev, 0);
 	platform_set_drvdata(pdev, NULL);

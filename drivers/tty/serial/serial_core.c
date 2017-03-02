@@ -1170,6 +1170,14 @@ uart_ioctl(struct tty_struct *tty, unsigned int cmd,
 
 	default: {
 		struct uart_port *uport = state->uart_port;
+#ifdef CONFIG_MACH_CCM2200
+		int ccm2200_board_serial_ioctl(struct uart_port *port, 
+					       unsigned int cmd, 
+					       unsigned long arg);
+		ret = ccm2200_board_serial_ioctl(uport, cmd, arg);
+		if (ret == -ENOIOCTLCMD) 
+#endif
+
 		if (uport->ops->ioctl)
 			ret = uport->ops->ioctl(uport, cmd, arg);
 		break;
@@ -2086,6 +2094,10 @@ uart_configure_port(struct uart_driver *drv, struct uart_state *state,
 		 * We probably don't need a spinlock around this, but
 		 */
 		spin_lock_irqsave(&port->lock, flags);
+                /* 2006-05-04 gc: bugfix, don't deactivate modem control lines
+                 *                from serial console!
+                 */
+		if (!uart_console(port))
 		port->ops->set_mctrl(port, port->mctrl & TIOCM_DTR);
 		spin_unlock_irqrestore(&port->lock, flags);
 

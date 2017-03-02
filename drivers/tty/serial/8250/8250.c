@@ -41,6 +41,9 @@
 #ifdef CONFIG_SPARC
 #include <linux/sunserialcore.h>
 #endif
+#ifdef CONFIG_MACH_CCM2200
+#include <mach/board-ccm2200.h>
+#endif
 
 #include <asm/io.h>
 #include <asm/irq.h>
@@ -1394,9 +1397,13 @@ serial8250_rx_chars(struct uart_8250_port *up, unsigned char lsr)
 	char flag;
 
 	do {
-		if (likely(lsr & UART_LSR_DR))
+		if (likely(lsr & UART_LSR_DR)) {
 			ch = serial_in(up, UART_RX);
-		else
+#ifdef CONFIG_MACH_CCM2200
+			ccm2200_board_serial_trigger_led(&up->port.ccm2200_serial->rxLed);
+#endif
+
+		} else
 			/*
 			 * Intel 82571 has a Serial Over Lan device that will
 			 * set UART_LSR_BI without setting UART_LSR_DR when
@@ -1476,6 +1483,11 @@ void serial8250_tx_chars(struct uart_8250_port *up)
 	int count;
 
 	if (port->x_char) {
+#ifdef CONFIG_MACH_CCM2200
+                ccm2200_board_serial_trigger_led(&up->port.ccm2200_serial->txLed);
+		ccm2200_board_serial_rs485_tx(&up->port);
+#endif
+
 		serial_out(up, UART_TX, port->x_char);
 		port->icount.tx++;
 		port->x_char = 0;
@@ -1491,6 +1503,10 @@ void serial8250_tx_chars(struct uart_8250_port *up)
 	}
 
 	count = up->tx_loadsz;
+#ifdef CONFIG_MACH_CCM2200
+        ccm2200_board_serial_trigger_led(&up->port.ccm2200_serial->txLed);
+	ccm2200_board_serial_rs485_tx(&up->port);
+#endif
 	do {
 		serial_out(up, UART_TX, xmit->buf[xmit->tail]);
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
@@ -1940,6 +1956,10 @@ static void serial8250_put_poll_char(struct uart_port *port,
 	 *	Send the character out.
 	 *	If a LF, also do CR...
 	 */
+#ifdef CONFIG_MACH_CCM2200
+        ccm2200_board_serial_trigger_led(&up->port.ccm2200_serial->txLed);
+	ccm2200_board_serial_rs485_tx(&up->port);
+#endif
 	serial_port_out(port, UART_TX, c);
 	if (c == 10) {
 		wait_for_xmitr(up, BOTH_EMPTY);
@@ -2714,6 +2734,10 @@ static struct uart_ops serial8250_pops = {
 };
 
 static struct uart_8250_port serial8250_ports[UART_NR];
+#ifdef CONFIG_MACH_CCM2200
+static struct ccm2200_board_serial ccm2200_board_serial[UART_NR];
+#endif
+
 
 static void (*serial8250_isa_config)(int port, struct uart_port *up,
 	unsigned short *capabilities);
@@ -2752,6 +2776,9 @@ static void __init serial8250_isa_init_ports(void)
 		up->mcr_force = ALPHA_KLUDGE_MCR;
 
 		port->ops = &serial8250_pops;
+#ifdef CONFIG_MACH_CCM2200
+                ccm2200_board_serial_init(&up->port, &ccm2200_board_serial[i]);
+#endif
 	}
 
 	if (share_irqs)

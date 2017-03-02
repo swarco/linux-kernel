@@ -260,6 +260,7 @@ static int __init physmap_init(void)
 			platform_driver_unregister(&physmap_flash_driver);
 	}
 #endif
+	printk("PHYSMAP initialized %d\n", err);
 
 	return err;
 }

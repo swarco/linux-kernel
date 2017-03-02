@@ -98,6 +98,15 @@ config AT91RM9200_WATCHDOG
 	  Watchdog timer embedded into AT91RM9200 chips. This will reboot your
 	  system when the timeout is reached.
 
+config CCM2200_WATCHDOG
+	tristate "CCM2200 board watchdog support"
+	depends on WATCHDOG && MACH_CCM2200
+	help
+	  Watchdog driver for CCM2200 board (MAX6751 Chip). This will
+          reboot your system when the timeout is reached.
+	  
+
+
 config AT91SAM9X_WATCHDOG
 	tristate "AT91SAM9X / AT91CAP9 watchdog"
 	depends on ARCH_AT91 && !ARCH_AT91RM9200

@@ -210,6 +210,12 @@ config MACH_RSI_EWS
 	depends on ARCH_AT91RM9200
 	help
 	  Select this if you are using RSIs EWS board.
+
+config MACH_CCM2200
+	bool "SWARCO Traffic Systems CCM2200 board"
+	help
+	  Select this if you are using the SWARCO Traffic Systems GmbH CCM2200 board
+
 endif
 
 # ----------------------------------------------------------
