@@ -41,6 +41,7 @@
 #include <linux/uaccess.h>
 
 #include <asm/io.h>
+#include <asm/mach-types.h>
 #include <asm/ioctls.h>
 
 #include <asm/mach/serial_at91.h>
@@ -49,6 +50,7 @@
 #ifdef CONFIG_ARM
 #include <mach/cpu.h>
 #include <asm/gpio.h>
+#include <mach/at91_pio.h>
 #endif
 
 #define PDC_BUFFER_SIZE		512
@@ -299,6 +301,13 @@ static void atmel_set_mctrl(struct uart_port *port, u_int mctrl)
 	else
 		mode |= ATMEL_US_CHMODE_NORMAL;
 
+	if (machine_is_swarcoextmodem() && (port->line == 4 || port->line == 5)) {
+		/* @@@ swarcoextmodem: Don't touch RS485 mode for ttyAT4 and
+		 * ttyAT5. It should always be enabled for these ports. */
+		UART_PUT_MR(port, mode);
+		return;
+	}
+	
 	/* Resetting serial mode to RS232 (0x0) */
 	mode &= ~ATMEL_US_USMODE;
 
@@ -1224,7 +1233,12 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
 	/* Resetting serial mode to RS232 (0x0) */
 	mode &= ~ATMEL_US_USMODE;
 
-	if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
+	if (machine_is_swarcoextmodem() && (port->line == 4 || port->line == 5)) {
+		/* swarcoextmodem: Just enable RS485 mode for ttyAT4 and
+		 * ttyAT5. */
+		mode |= ATMEL_US_USMODE_RS485;
+	}
+	else if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
 		dev_dbg(port->dev, "Setting UART to RS485\n");
 		UART_PUT_TTGR(port, atmel_port->rs485.delay_rts_after_send);
 		mode |= ATMEL_US_USMODE_RS485;
@@ -1235,6 +1249,33 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
 	/* set the parity, stop bits and data size */
 	UART_PUT_MR(port, mode);
 
+	if (machine_is_swarcoextmodem() && port->line == 4) {
+		/* swarcoextmodem ttyAT4: PC8 must be changed from PIO to RTS3
+		 * function (peripheral B) _after_ USART mode has been set to
+		 * RS485. Otherwise the pin would be driven high (RTS inactive
+		 * state in normal mode), disturbing the RS485 bus by enabling
+		 * the driver. This is normally done using
+		 *   at91_set_B_periph(AT91_PIN_PC8, 0);
+		 * but that function is marked __init and is not available now.
+		 * Do it manually. */
+		unsigned mask = 1 << 8;
+		__raw_writel(mask, AT91_VA_BASE_SYS + AT91_PIOC + PIO_IDR);
+		__raw_writel(mask, AT91_VA_BASE_SYS + AT91_PIOC + PIO_PUDR);
+		__raw_writel(mask, AT91_VA_BASE_SYS + AT91_PIOC + PIO_BSR);
+		__raw_writel(mask, AT91_VA_BASE_SYS + AT91_PIOC + PIO_PDR);
+	}
+	
+	if (machine_is_swarcoextmodem() && port->line == 5) {
+		/* swarcoextmodem ttyAT5: PB28 must be changed from PIO to RTS1
+		 * function (peripheral A) _after_ USART mode has been set to
+		 * RS485. See above. */
+		unsigned mask = 1 << 28;
+		__raw_writel(mask, AT91_VA_BASE_SYS + AT91_PIOB + PIO_IDR);
+		__raw_writel(mask, AT91_VA_BASE_SYS + AT91_PIOB + PIO_PUDR);
+		__raw_writel(mask, AT91_VA_BASE_SYS + AT91_PIOB + PIO_ASR);
+		__raw_writel(mask, AT91_VA_BASE_SYS + AT91_PIOB + PIO_PDR);
+	}
+	
 	/* set the baud rate */
 	UART_PUT_BRGR(port, quot);
 	UART_PUT_CR(port, ATMEL_US_RSTSTA | ATMEL_US_RSTRX);

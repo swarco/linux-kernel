@@ -67,6 +67,7 @@ obj-$(CONFIG_MACH_ACMENETUSFOXG20) += board-foxg20.o
 obj-$(CONFIG_MACH_STAMP9G20)	+= board-stamp9g20.o
 obj-$(CONFIG_MACH_PORTUXG20)	+= board-stamp9g20.o
 obj-$(CONFIG_MACH_PCONTROL_G20)	+= board-pcontrol-g20.o board-stamp9g20.o
+obj-$(CONFIG_MACH_SWARCOEXTMODEM) += board-swarcoscc3g.o swarco-io.o
 obj-$(CONFIG_MACH_GSIA18S)	+= board-gsia18s.o board-stamp9g20.o
 obj-$(CONFIG_MACH_USB_A9G20)	+= board-usb-a926x.o
 

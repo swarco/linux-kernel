@@ -21,6 +21,12 @@
 #include <linux/phy.h>
 #include <linux/micrel_phy.h>
 
+/* @@@ Module parameter power= */
+static char *power;
+module_param (power, charp, 0);
+MODULE_PARM_DESC(power, "PHY power mode. 'powerdown'=disable phy, 'energydetect'=low power, normal function");
+
+
 /* general Interrupt control/status reg in vendor specific block. */
 #define MII_KSZPHY_INTCS			0x1B
 #define	KSZPHY_INTCS_JABBER			(1 << 15)
@@ -98,6 +104,64 @@ static int ks8737_config_intr(struct phy_device *phydev)
 
 static int kszphy_config_init(struct phy_device *phydev)
 {
+	/* @@@ Initialize power mode according to module parameter power= */
+	int temp;
+	
+	if (!power) {
+		/* power= not specified */
+		printk(KERN_INFO "kszphy_config_init: power= not specified\n");
+	}
+	else if (!strcmp (power, "powerdown")) {
+		/* power=powerdown */
+		printk(KERN_INFO "kszphy_config_init: Entering powerdown mode\n");
+
+		/* First issue two software resets to bring the chip out of
+		 * Power Down in case we have earlier been loaded with
+		 * power=powerdown. */
+		temp = phy_read(phydev, 0x00);
+		temp |= (1 << 15);
+		phy_write(phydev, 0x00, temp);
+		phy_write(phydev, 0x00, temp);
+		
+		/* Register 11h bit 5: 1 = Enable slow oscillator mode */
+		temp = phy_read(phydev, 0x11);
+		temp |= (1 << 5);
+		phy_write(phydev, 0x11, temp);
+
+		/* Register 0h bit 11: 1 = Enter power down mode */
+		temp = phy_read(phydev, 0x00);
+		temp |= (1 << 11);
+		phy_write(phydev, 0x00, temp);
+	}
+	else if (!strcmp (power, "energydetect")) {
+		/* power=energydetect */
+		printk(KERN_INFO "kszphy_config_init: Entering energydetect mode\n");
+
+		/* First issue two software resets to bring the chip out of
+		 * Power Down in case we have earlier been loaded with
+		 * power=powerdown. */
+		temp = phy_read(phydev, 0x00);
+		temp |= (1 << 15);
+		phy_write(phydev, 0x00, temp);
+		phy_write(phydev, 0x00, temp);
+		
+		/* Register 10h bit 4: 1 = Turn PLL off automatically in EDPD mode */
+		temp = phy_read(phydev, 0x10);
+		temp |= (1 << 4);
+		phy_write(phydev, 0x10, temp);
+
+		/* Register 18h bit 11: 0 = Enable Energy Detect Power Down (EDPD) mode */
+		temp = phy_read(phydev, 0x18);
+		temp &= ~(1 << 11);
+		phy_write(phydev, 0x18, temp);
+	}
+	else {
+		/* Invalid power= */
+		printk(KERN_ERR
+			"kszphy_config_init: Invalid power= module parameter. "
+			"Supported values are powerdown and energydetect.\n");
+		return -EINVAL;
+	}
 	return 0;
 }
 

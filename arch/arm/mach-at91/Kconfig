@@ -374,6 +374,12 @@ config MACH_PCONTROL_G20
 	  carrier board, beeing the decentralized unit of a building automation
 	  system; featuring nvram, eth-switch, iso-rs485, display, io
 
+config MACH_SWARCOEXTMODEM
+	bool "Swarco SCC-3G (External Modem)"
+	help
+	  Select this if you are using the AT91SAM9G20-based Swarco SCC-3G
+	  board.
+
 config MACH_GSIA18S
 	bool "GS_IA18_S board"
 	help
