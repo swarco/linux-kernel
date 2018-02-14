@@ -203,9 +203,10 @@ static int ccm2200_gpio_release(struct inode *inode, struct file *file)
 static long ccm2200_gpio_ioctl(struct file *file, unsigned int cmd, 
                                unsigned long arg)
 {
-	static struct ccm2200_gpio_ioctl_data ioctl_data;
+	struct ccm2200_gpio_ioctl_data ioctl_data;
 
-	if (copy_from_user(&ioctl_data, (struct ccm2200_gpio_ioctl_data *)arg,
+	if (copy_from_user(&ioctl_data,
+                           (struct ccm2200_gpio_ioctl_data __user *)arg,
                            sizeof(ioctl_data)))
 		return -EFAULT;
 
@@ -214,7 +215,7 @@ static long ccm2200_gpio_ioctl(struct file *file, unsigned int cmd,
                 if (ccm2200_gpio_in(ioctl_data.device, ioctl_data.mask,
                 		   &ioctl_data.data))
                 	return -EFAULT;
-                if (copy_to_user((struct ccm2200_gpio_ioctl_data *)arg,
+                if (copy_to_user((struct ccm2200_gpio_ioctl_data __user *)arg,
                                  &ioctl_data, sizeof(ioctl_data)))
                         return -EFAULT;
                 break;
