@@ -33,6 +33,8 @@
 #include <linux/platform_device.h>
 #include <linux/gpio.h>
 #include <linux/spi/spi.h>
+#include <linux/can/platform/mcp251x.h>
+#include <linux/interrupt.h>
 
 #include <mach/hardware.h>
 #include <asm/setup.h>
@@ -160,6 +162,27 @@ static struct i2c_board_info __initdata swarcoscc3g_i2c_devices[] = {
 		/* "swarcoio-ads1112" is implemented in swarcoio.c */
 		I2C_BOARD_INFO("swarcoio-ads1112", 0x48),
 	},
+}
+ ;
+
+/* SPI device: Microchip MCP2515 CAN controller */
+static struct mcp251x_platform_data swarcoscc3g_mcp2515_info = {
+    .oscillator_frequency	= 8000000,
+    .irq_flags			= IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+    .board_specific_setup	= NULL,
+    .transceiver_enable		= NULL,
+    .power_enable		= NULL
+};
+
+static struct spi_board_info swarcoscc3g_spi_devices[] = {
+	{	    /* Microchip MCP2515 CAN controller */
+		.modalias	= "mcp2515",
+		.platform_data  = &swarcoscc3g_mcp2515_info,
+//		.controller_data= (void *)PIN_CAN_CS_NOT, /* ??? */
+		.irq		= AT91_PIN_PC16,
+		.max_speed_hz	= 4*1000*1000,
+		.chip_select	= 1
+	},
 };
 
 
@@ -264,6 +287,11 @@ static void __init swarcoscc3g_board_init(void)
 	/* NAND */
 	swarcoscc3g_add_device_nand();
 	
+#if defined(CONFIG_SPI_ATMEL) || defined(CONFIG_SPI_ATMEL_MODULE)
+	/* SPI */
+	at91_add_device_spi(swarcoscc3g_spi_devices, ARRAY_SIZE(swarcoscc3g_spi_devices));
+#endif
+
 	/* LEDs */
 	at91_gpio_leds (swarcoscc3g_leds, ARRAY_SIZE(swarcoscc3g_leds));
 
