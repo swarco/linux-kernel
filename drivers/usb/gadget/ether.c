@@ -93,6 +93,12 @@ static inline bool has_rndis(void)
 #endif
 }
 
+/* 2019-03-11 gc: provide Microsoft specific OS-Descriptor to give Window
+ * a hint which driver it should load
+ */
+#define STRING_MS_OS_DESCRIPTOR	0xee
+#define	RNDIS_BMS_VENDOR_CODE	0x0d
+
 /*-------------------------------------------------------------------------*/
 
 /*
@@ -338,6 +344,14 @@ static int __init eth_bind(struct usb_composite_dev *cdev)
 		device_desc.bcdDevice =
 			cpu_to_le16(0x0300 | 0x0099);
 	}
+#if defined(CONFIG_USB_ETH_RNDIS) && defined(RNDIS_BMS_VENDOR_CODE)
+	/* 2019-03-14 gc: increase device version (bcdDevice) to force
+	 * Windows 10 to read Micrsoft OS-Descriptor from us
+	 */
+	device_desc.bcdDevice =
+			cpu_to_le16(0x1000
+				    | le16_to_cpu(device_desc.bcdDevice));
+#endif	
 
 
 	/* Allocate string descriptor numbers ... note that string

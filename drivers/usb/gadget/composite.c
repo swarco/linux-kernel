@@ -1085,6 +1085,23 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 				value = min(w_length, (u16) value);
 			break;
 		case USB_DT_STRING:
+#if defined(CONFIG_USB_ETH_RNDIS) && defined(RNDIS_BMS_VENDOR_CODE)
+			/* 2016-08-03 gc: check for Microsoft OS
+			 * string descriptor */
+			if ((w_value & 0xff) == STRING_MS_OS_DESCRIPTOR)  {
+				static const u8 ms_os_string[18] = {
+					18, 3,
+ 					'M', 0, 'S', 0, 'F', 0, 'T', 0,
+					'1', 0, '0', 0, '0', 0,
+					RNDIS_BMS_VENDOR_CODE, 0x00
+				};
+				printk(KERN_INFO "gc: get descriptor ms_os_descriptor\n");
+				value = min(w_length,
+					    (u16) sizeof(ms_os_string));
+				memcpy(req->buf, &ms_os_string, value);
+				break;
+			}
+#endif /* defined(CONFIG_USB_ETH_RNDIS) && defined(RNDIS_BMS_VENDOR_CODE) */
 			value = get_string(cdev, req->buf,
 					w_index, w_value & 0xff);
 			if (value >= 0)
@@ -1098,6 +1115,43 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			break;
 		}
 		break;
+#if defined(CONFIG_USB_ETH_RNDIS) && defined(RNDIS_BMS_VENDOR_CODE)
+	case RNDIS_BMS_VENDOR_CODE: {
+		/* MS OS Feature descriptor */
+		static const u8 ms_os_feature_dsc[] = {
+			0x28, 0x00, 0x00, 0x00, /* dwLength */
+			0x00, 0x01,		/* bcdVersion */
+			0x04, 0x00,		/* wIndex */
+			0x01,			/* bCount */
+			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00,	/* reserved */
+			0x00,			/* bFirstInterfaceNumber */
+			0x01,			/* reserved */
+
+			0x52, 0x4e, 0x44, 0x49,
+			0x53, 0x00, 0x00, 0x00, /* compatibleID ="RNDIS" */
+			0x35, 0x31, 0x36, 0x32,
+			0x30, 0x30, 0x31, 0x00, /* subCompatibleID = "5162001" => RNDIS 6.0 */
+			/*
+			 * 0x00, 0x00, 0x00, 0x00,
+			 * 0x00, 0x00, 0x00, 0x00, /\* subCompatibleID = no subcompatible ID  => RNDIS 5.0 *\/
+			 */
+
+			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00		/* reserved  */
+		};
+
+		printk(KERN_INFO
+		       "gc: RNDIS_BMS_VENDOR_CODE %02x  %02x %d %d %d\n",
+		       ctrl->bRequestType, ctrl->bRequest, value,
+		       sizeof(ms_os_feature_dsc), w_length);
+		//assert(sizeof(ms_os_feature_dsc) == ms_os_feature_dsc[0]);
+		value = min(w_length,
+			    (u16) sizeof(ms_os_feature_dsc));
+		memcpy(req->buf, &ms_os_feature_dsc, value);
+		break;
+	}
+#endif /* defined(CONFIG_USB_ETH_RNDIS) && defined(RNDIS_BMS_VENDOR_CODE) */
 
 	/* any number of configs can work */
 	case USB_REQ_SET_CONFIGURATION:
