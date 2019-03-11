@@ -295,6 +295,13 @@ int __init ccm2200_gpio_init(void)
                 static const struct at91_pio_pins ccm2200_n_ext_reset = 
                         { AT91_PIO_BASE(AT91_PIOB), 1<<3 }; 
 
+                /* 2019-03-11 gc: preserve reset state of the digital
+                 * outputs (port is logical '1' => the optocoupler's
+                 * LED ore turned ON (and also MOSFET output) => This
+                 * ensures no change of port state during booting process
+                 */
+                at91_sys_write(AT91C_VA_BASE_PIOD + PIO_SODR,
+                               CCM2200_PIOD_OUT8_11_MASK);
                 at91_pio_enable_open_drain_pins(&ccm2200_out_pio_d);  
                 at91_pio_config_output_pins(&ccm2200_out_pio_d);
                 /* assert reset signal to external latch */
