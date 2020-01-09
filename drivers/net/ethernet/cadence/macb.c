@@ -3069,9 +3069,27 @@ static int macb_probe(struct platform_device *pdev)
 	if (err)
 		goto err_out_free_netdev;
 
-	err = macb_mii_init(bp);
-	if (err)
-		goto err_out_free_netdev;
+	if (of_phy_is_fixed_link(np)) {
+		err = of_phy_register_fixed_link(np);
+		if (err < 0) {
+			dev_err(&pdev->dev, "Cannot register fixed PHY\n");
+			goto err_out_free_netdev;
+		}
+		dev->phydev = of_phy_find_device(np);
+		if (dev->phydev == NULL) {
+			dev_err(&pdev->dev, "Error of_phy_find_device()\n");
+			goto err_out_free_netdev;	/* @@ Should also unregister fixed link? */
+		}
+		err = phy_connect_direct(dev, dev->phydev, &macb_handle_link_change, bp->phy_interface);
+		if (err) {
+			dev_err(&pdev->dev, "Error phy_connect_direct %d\n", err);
+			goto err_out_free_netdev;	/* @@ Should also unregister fixed link? */
+		}
+	} else {
+		err = macb_mii_init(bp);
+		if (err)
+			goto err_out_free_netdev;
+	}
 
 	phydev = dev->phydev;
 
@@ -3092,6 +3110,7 @@ static int macb_probe(struct platform_device *pdev)
 	return 0;
 
 err_out_unregister_mdio:
+	/* @@ This is wrong if we came through of_phy_is_fixed_link() */
 	phy_disconnect(dev->phydev);
 	mdiobus_unregister(bp->mii_bus);
 	mdiobus_free(bp->mii_bus);

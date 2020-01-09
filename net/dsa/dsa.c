@@ -57,6 +57,9 @@ const struct dsa_device_ops *dsa_device_ops[DSA_TAG_LAST] = {
 #ifdef CONFIG_NET_DSA_TAG_QCA
 	[DSA_TAG_PROTO_QCA] = &qca_netdev_ops,
 #endif
+#ifdef CONFIG_NET_DSA_TAG_MICRELSW
+	[DSA_TAG_PROTO_MICRELSW] = &micrelsw_netdev_ops,
+#endif
 	[DSA_TAG_PROTO_NONE] = &none_ops,
 };
 
@@ -457,6 +460,42 @@ static int dsa_switch_setup_one(struct dsa_switch *ds, struct device *parent)
 
 out:
 	return ret;
+}
+
+int dsa_update_tagging_protocol(struct dsa_switch *ds)
+{
+    struct dsa_switch_ops *ops = ds->ops;
+    struct dsa_switch_tree *dst = ds->dst;
+    struct dsa_chip_data *cd = ds->cd;
+    enum dsa_tag_protocol tag_protocol;
+    int port;
+    int index = ds->index;
+    int ret = 0;
+
+    tag_protocol = ops->get_tag_protocol(ds);
+    dst->tag_ops = dsa_resolve_tag_protocol(tag_protocol);
+    if (IS_ERR(dst->tag_ops)) {
+        ret = PTR_ERR(dst->tag_ops);
+        goto out;
+    }
+
+    dst->rcv = dst->tag_ops->rcv;
+
+    for (port = 0; port < DSA_MAX_PORTS; port++)
+    {
+        if (!(ds->enabled_port_mask & (1 << port)))
+            continue;
+
+        ret = dsa_slave_update_tag_protocol(ds, ds->ports[port].netdev);
+        if (ret < 0) {
+            netdev_err(dst->master_netdev, "[%d]: failed to update tag protocol for port %d(%s): %d\n",
+                   index, port, cd->port_names[port], ret);
+            ret = 0;
+        }
+    }
+
+out:
+    return ret;
 }
 
 static struct dsa_switch *
