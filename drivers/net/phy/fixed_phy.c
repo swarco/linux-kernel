@@ -50,8 +50,15 @@ static struct fixed_mdio_bus platform_fmb = {
 
 static void fixed_phy_update(struct fixed_phy *fp)
 {
+	/* @@@ As of 4.8-rc7, you specify the GPIO like
+	 *   link-gpios = <&pioB 27 GPIO_ACTIVE_LOW>;
+	 * but this file, and drivers/of/of_mdio.c uses gpio numbers and
+	 * not struct gpio_desc, and the GPIO_ACTIVE_LOW is ignored. Our
+	 * GPIO is active low. Until that is fixed correctly, read the input
+	 * inverted here. */
 	if (gpio_is_valid(fp->link_gpio))
-		fp->status.link = !!gpio_get_value_cansleep(fp->link_gpio);
+//		fp->status.link = !!gpio_get_value_cansleep(fp->link_gpio);
+		fp->status.link = !gpio_get_value_cansleep(fp->link_gpio);
 }
 
 static int fixed_mdio_read(struct mii_bus *bus, int phy_addr, int reg_num)
