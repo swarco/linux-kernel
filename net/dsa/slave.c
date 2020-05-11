@@ -1291,6 +1291,16 @@ int dsa_slave_create(struct dsa_switch *ds, struct device *parent,
 	return 0;
 }
 
+int dsa_slave_update_tag_protocol(struct dsa_switch *ds, struct net_device *slave_dev)
+{
+    struct dsa_slave_priv *p;
+
+    p = netdev_priv(slave_dev);
+    p->xmit = ds->dst->tag_ops->xmit;
+
+    return 0;
+}
+
 void dsa_slave_destroy(struct net_device *slave_dev)
 {
 	struct dsa_slave_priv *p = netdev_priv(slave_dev);

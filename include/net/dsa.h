@@ -27,6 +27,7 @@ enum dsa_tag_protocol {
 	DSA_TAG_PROTO_EDSA,
 	DSA_TAG_PROTO_BRCM,
 	DSA_TAG_PROTO_QCA,
+	DSA_TAG_PROTO_MICRELSW,
 	DSA_TAG_LAST,		/* MUST BE LAST */
 };
 
@@ -398,6 +399,8 @@ static inline bool dsa_uses_tagged_protocol(struct dsa_switch_tree *dst)
 {
 	return dst->rcv != NULL;
 }
+
+int dsa_update_tagging_protocol(struct dsa_switch *ds);
 
 void dsa_unregister_switch(struct dsa_switch *ds);
 int dsa_register_switch(struct dsa_switch *ds, struct device_node *np);

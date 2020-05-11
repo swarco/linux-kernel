@@ -34,4 +34,12 @@ config NET_DSA_QCA8K
 	  This enables support for the Qualcomm Atheros QCA8K Ethernet
 	  switch chips.
 
+config NET_DSA_KSZ8795
+	tristate "Micrel KSZ8795 / KSZ8765 ethernet switch support"
+	depends on NET_DSA && SPI
+	select NET_DSA_TAG_MICRELSW
+	---help---
+	  This enables support for the Micrel KSZ8795 and KSZ8765
+	  Ethernet switch chips using SPI management interface.
+
 endmenu

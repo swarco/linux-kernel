@@ -63,6 +63,7 @@ void dsa_slave_mii_bus_init(struct dsa_switch *ds);
 void dsa_cpu_port_ethtool_init(struct ethtool_ops *ops);
 int dsa_slave_create(struct dsa_switch *ds, struct device *parent,
 		     int port, const char *name);
+int dsa_slave_update_tag_protocol(struct dsa_switch *ds, struct net_device *slave_dev);
 void dsa_slave_destroy(struct net_device *slave_dev);
 int dsa_slave_suspend(struct net_device *slave_dev);
 int dsa_slave_resume(struct net_device *slave_dev);
@@ -83,5 +84,8 @@ extern const struct dsa_device_ops brcm_netdev_ops;
 
 /* tag_qca.c */
 extern const struct dsa_device_ops qca_netdev_ops;
+
+/* tag_micrelsw.c */
+extern const struct dsa_device_ops micrelsw_netdev_ops;
 
 #endif
