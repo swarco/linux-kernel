@@ -905,7 +905,7 @@ static int ksz_spi_probe(struct spi_device *spi)
 	kszd->dev = &spi->dev;
 	kszd->ds = ds;
 	kszd->priv = spi;
-	kszd->tail_tagging_enabled = 0; // default switch operation
+	kszd->tail_tagging_enabled = 1; // default operation set to tailtagging
 	mutex_init(&kszd->reg_mutex);
 	
 	/* If a reset GPIO ("reset-gpio" or "reset-gpios") is defined, set it
@@ -958,6 +958,19 @@ static int ksz_spi_probe(struct spi_device *spi)
     if (ret) {
         dev_err(&spi->dev, "unable to create sysfs file, err=%d\n", ret);
         return ret;
+    }
+
+	// activate to default tailtagging mode
+	if (kszd->tail_tagging_enabled == 1)
+    {
+		ksz_enable_tail_tagging(kszd->ds);
+		dsa_update_tagging_protocol(kszd->ds);
+
+    }
+    else
+    {
+        ksz_disable_tail_tagging(kszd->ds);
+		dsa_update_tagging_protocol(kszd->ds);
     }
 
 	return 0;
