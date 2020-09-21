@@ -269,10 +269,10 @@
 							 AT91_PIOB 18 AT91_PERIPH_A AT91_PINCTRL_NONE>; /* PB18 periph A G125CK */
 					};
 
-                                        /* 2020-09-21 gc:  */
+                                        /* 2020-09-21 gc: pioE 15 GPIO_ACTIVE_LOW */
                                         pinctrl_spi_ksz: spi_ksz {
 						atmel,pins =
-							<AT91_PIOB 28 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
+							<AT91_PIOC 15 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH> ; /* GMAC_RESET */
 					};
 
 					/* GPIOs for modem 3G/4G ID. GPI with pullup. */
@@ -346,8 +346,10 @@
 		/* 		reg = <0x00800000 0x00000000>;	/\* MTDPART_SIZ_FULL *\/ */
 		/* 	}; */
 		/* }; */
-                ebi@10000000 {
-			pinctrl-0 = <&pinctrl_ebi_addr &pinctrl_ebi_cs0>;
+                ebi: ebi@60000000 { /* NAND has NCS3 */
+			/*
+                         * pinctrl-0 = <&pinctrl_ebi_addr &pinctrl_ebi_cs0>;
+                         */
 			pinctr-name = "default";
 			status = "okay";
 
