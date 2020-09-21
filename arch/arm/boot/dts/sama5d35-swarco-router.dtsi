@@ -6,6 +6,7 @@
  *  Copyright (C) 2013 Atmel,
  *                2013 Ludovic Desroches <ludovic.desroches@atmel.com>
  *                2016 Karl Olsen <karl@micro-technic.com>
+ *                2020 Guido Classen 
  *
  * Licensed under GPLv2 or later.
  */
@@ -135,7 +136,7 @@
 			 * The KSZ87x5 is managed through SPI interface. */
 			macb0: ethernet@f0028000 {
 				pinctrl-0 = <&pinctrl_macb0_data_rgmii &pinctrl_macb0_signal_rgmii_nomdio>;
-				phy-mode = "rgmii";
+				phy-mode = "rgmii-id";
 				#address-cells = <1>;
 				#size-cells = <0>;
 				status = "okay";
@@ -153,29 +154,78 @@
 			spi1: spi@f8008000 {
 				/* The default pinctrl_spi1 covers SPCK, MISO, MOSI.
 				 * Chip select is GPIO which does not need pinctrl. */
-				cs-gpios = <&pioC 25 0>;
+				/*
+                                 * pinctrl-0 = <&pinctrl_spi_ksz>;
+                                 */
+                                cs-gpios = <&pioC 25 GPIO_ACTIVE_LOW>;
 				status = "okay";
+                                /*
+                                 * id = <1>;
+                                 */
 
-				ksz87x5_spi@0 {
-					/* Micrel KSZ8795 / KSZ8765 5-port switch */
-					compatible = "micrel,ksz8765";
-					reg = <0>;
-					reset-gpios = <&pioE 15 GPIO_ACTIVE_LOW>;
-					spi-max-frequency = <50000000>;
-					#address-cells = <1>;
-					#size-cells = <0>;
+				/* ksz87x5_spi@0 { */
+				/* 	/\* Micrel KSZ8795 / KSZ8765 5-port switch *\/ */
+				/* 	compatible = "micrel,ksz8765"; */
+				/* 	reg = <0>; */
+				/* 	reset-gpios = <&pioE 15 GPIO_ACTIVE_LOW>; */
+				/* 	spi-max-frequency = <50000000>; */
+				/* 	#address-cells = <1>; */
+				/* 	#size-cells = <0>; */
 					
-					ports {
-						#address-cells = <1>;
-						#size-cells = <0>;
+				/* 	ports { */
+				/* 		#address-cells = <1>; */
+				/* 		#size-cells = <0>; */
 
-						port4@4 {
-							reg = <4>;
-							label = "cpu";
-							ethernet = <&macb0>;
-						};
-					};
-				};
+				/* 		port4@4 { */
+				/* 			reg = <4>; */
+				/* 			label = "cpu"; */
+				/* 			ethernet = <&macb0>; */
+				/* 		}; */
+				/* 	}; */
+				/* }; */
+		                ksz8795: ksz8795@0 {
+                                        /* Micrel KSZ8795  5-port switch */
+			                compatible = "microchip,ksz8795";
+			                reg = <0>;
+                                        reset-gpios = <&pioE 15 GPIO_ACTIVE_LOW>; 
+			                spi-max-frequency = <50000000>;
+			                /*
+                                         * spi-cpha;
+			                 * spi-cpol;
+                                         */
+                                        status = "okay";
+
+			                ports {
+				                #address-cells = <1>;
+				                #size-cells = <0>;
+				                port@0 {
+					                reg = <0>;
+					                label = "lan3";
+				                };
+				                port@1 {
+					                reg = <1>;
+					                label = "lan4";
+				                };
+				                port@2 {
+					                reg = <2>;
+					                label = "lan5";
+				                };
+				                port@3 {
+					                reg = <3>;
+					                label = "lan2";
+				                };
+				                port@4 {
+					                reg = <4>;
+					                label = "cpu";
+					                ethernet = <&macb0>;
+					                fixed-link {
+						                speed = <1000>;
+						                full-duplex;
+					                };
+				                };
+			                };
+		                };
+                                
 			};
 
 			/* Watchdog */
@@ -225,6 +275,12 @@
 							 AT91_PIOB 18 AT91_PERIPH_A AT91_PINCTRL_NONE>; /* PB18 periph A G125CK */
 					};
 
+                                        /* 2020-09-21 gc: pioE 15 GPIO_ACTIVE_LOW */
+                                        pinctrl_spi_ksz: spi_ksz {
+						atmel,pins =
+							<AT91_PIOE 15 AT91_PERIPH_GPIO AT91_PINCTRL_NONE> ; /* GMAC_RESET */
+					};
+
 					/* GPIOs for modem 3G/4G ID. GPI with pullup. */
 					pinctrl_modemid: modemid-0 {
 						atmel,pins =
@@ -236,7 +292,7 @@
 		};
 
 		/* USB Device */
-		usb0: gadget@00500000 {
+		usb0: gadget@500000 {
 			atmel,vbus-gpio = <&pioD 28 GPIO_ACTIVE_HIGH>;
 			pinctrl-names = "default";
 			/* The modem ID pins have nothing to do with USB Device, but we
@@ -246,7 +302,7 @@
 		};
 
 		/* USB Host fullspeed */
-		usb1: ohci@00600000 {
+		usb1: ohci@600000 {
 			num-ports = <3>;
 			atmel,vbus-gpio =
 				<0				/* USB_A is device only */
@@ -256,44 +312,95 @@
 		};
 
 		/* USB Host highspeed */
-		usb2: ehci@00700000 {
+		usb2: ehci@700000 {
 			status = "okay";
 		};
 
+                /* 2020-09-21 gc: nand0 => old config  @todo remove */
 		/* 128/256/512 MB NAND flash.
 		 * ECC settings must match with the bootloader. */
-		nand0: nand@60000000 {
-			nand-bus-width = <8>;
-			nand-ecc-mode = "hw";
-			atmel,has-pmecc;
-			atmel,pmecc-cap = <8>;
-			atmel,pmecc-sector-size = <512>;
-			nand-on-flash-bbt;
+		/* nand0: nand@60000000 { */
+		/* 	nand-bus-width = <8>; */
+		/* 	nand-ecc-mode = "hw"; */
+		/* 	atmel,has-pmecc; */
+		/* 	atmel,pmecc-cap = <8>; */
+		/* 	atmel,pmecc-sector-size = <512>; */
+		/* 	nand-on-flash-bbt; */
+		/* 	status = "okay"; */
+
+		/* 	/\* mtd0: 128 KB (1 block) for bootloader. *\/ */
+		/* 	bootloader@0 { */
+		/* 		label = "bootloader"; */
+		/* 		reg = <0x00000000 0x00020000>;	/\* 128 KB *\/ */
+		/* 	}; */
+
+		/* 	/\* mtd1: Almost 8 MB (63 blocks) for kernel+initramfs. *\/ */
+		/* 	kernel@20000 { */
+		/* 		label = "kernel"; */
+		/* 		reg = <0x00020000 0x007E0000>;	/\* 8064 KB *\/ */
+		/* 	}; */
+
+		/* 	/\* mtd2: The rest (120/248/504 MB) for UBI. This */
+		/* 	 * normally contains one volume called "rootfs". */
+		/* 	 * */
+		/* 	 * The magic value MTDPART_SIZ_FULL (0) isn't mentioned */
+		/* 	 * in the devicetree binding docs, but it works. With */
+		/* 	 * this you don't need separate .dtb files for */
+		/* 	 * different NAND flash sizes. *\/ */
+		/* 	ubi0@800000 { */
+		/* 		label = "ubi0"; */
+		/* 		reg = <0x00800000 0x00000000>;	/\* MTDPART_SIZ_FULL *\/ */
+		/* 	}; */
+		/* }; */
+                ebi: ebi@10000000 { /* NAND has NCS3, which is not a GPIO */
+			pinctrl-0 = <&pinctrl_ebi_nand_addr>;
+			pinctr-name = "default";
 			status = "okay";
 
-			/* mtd0: 128 KB (1 block) for bootloader. */
-			bootloader@0 {
-				label = "bootloader";
-				reg = <0x00000000 0x00020000>;	/* 128 KB */
-			};
+			nand_controller: nand-controller {
+				status = "okay";
 
-			/* mtd1: Almost 8 MB (63 blocks) for kernel+initramfs. */
-			kernel@20000 {
-				label = "kernel";
-				reg = <0x00020000 0x007E0000>;	/* 8064 KB */
-			};
+				nand@3 {
+					reg = <0x3 0x0 0x2>;
+					atmel,rb = <0>;
+					nand-bus-width = <8>;
+					nand-ecc-mode = "hw";
+					nand-ecc-strength = <8>;
+					nand-ecc-step-size = <512>;
+					nand-on-flash-bbt;
+					label = "atmel_nand";
 
-			/* mtd2: The rest (120/248/504 MB) for UBI. This
-			 * normally contains one volume called "rootfs".
-			 *
-			 * The magic value MTDPART_SIZ_FULL (0) isn't mentioned
-			 * in the devicetree binding docs, but it works. With
-			 * this you don't need separate .dtb files for
-			 * different NAND flash sizes. */
-			ubi0@800000 {
-				label = "ubi0";
-				reg = <0x00800000 0x00000000>;	/* MTDPART_SIZ_FULL */
+					partitions {
+						compatible = "fixed-partitions";
+						#address-cells = <1>;
+						#size-cells = <1>;
+
+			                        /* mtd0: 128 KB (1 block) for bootloader. */
+			                        bootloader@0 {
+				                        label = "bootloader";
+				                        reg = <0x00000000 0x00020000>;	/* 128 KB */
+			                        };
+                                                
+			                        /* mtd1: Almost 8 MB (63 blocks) for kernel+initramfs. */
+			                        kernel@20000 {
+				                        label = "kernel";
+				                        reg = <0x00020000 0x007E0000>;	/* 8064 KB */
+			                        };
+                                                
+			                        /* mtd2: The rest (120/248/504 MB) for UBI. This
+			                        * normally contains one volume called "rootfs".
+			                        *
+			                        * The magic value MTDPART_SIZ_FULL (0) isn't mentioned
+			                        * in the devicetree binding docs, but it works. With
+			                        * this you don't need separate .dtb files for
+			                        * different NAND flash sizes. */
+			                        ubi0@800000 {
+				                        label = "ubi0";
+				                        reg = <0x00800000 0x00000000>;	/* MTDPART_SIZ_FULL */
+			                        };
+					};
+				};
 			};
-		};
+		};                
 	};
 };

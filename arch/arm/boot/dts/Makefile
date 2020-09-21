@@ -73,7 +73,8 @@ dtb-$(CONFIG_SOC_SAM_V7) += \
 	at91-sama5d4_ma5d4evk.dtb \
 	at91-sama5d4_xplained.dtb \
 	at91-sama5d4ek.dtb \
-	at91-vinco.dtb
+	at91-vinco.dtb \
+	sama5d35-swarco-ethernetrouter.dtb
 dtb-$(CONFIG_ARCH_ATLAS6) += \
 	atlas6-evb.dtb
 dtb-$(CONFIG_ARCH_ATLAS7) += \
