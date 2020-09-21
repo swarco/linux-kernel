@@ -6,6 +6,7 @@
  *  Copyright (C) 2013 Atmel,
  *                2013 Ludovic Desroches <ludovic.desroches@atmel.com>
  *                2016 Karl Olsen <karl@micro-technic.com>
+ *                2020 Guido Classen 
  *
  * Licensed under GPLv2 or later.
  */
@@ -236,7 +237,7 @@
 		};
 
 		/* USB Device */
-		usb0: gadget@00500000 {
+		usb0: gadget@500000 {
 			atmel,vbus-gpio = <&pioD 28 GPIO_ACTIVE_HIGH>;
 			pinctrl-names = "default";
 			/* The modem ID pins have nothing to do with USB Device, but we
@@ -246,7 +247,7 @@
 		};
 
 		/* USB Host fullspeed */
-		usb1: ohci@00600000 {
+		usb1: ohci@600000 {
 			num-ports = <3>;
 			atmel,vbus-gpio =
 				<0				/* USB_A is device only */
@@ -256,44 +257,117 @@
 		};
 
 		/* USB Host highspeed */
-		usb2: ehci@00700000 {
+		usb2: ehci@700000 {
 			status = "okay";
 		};
 
+                /* 2020-09-21 gc: nand0 => old config  @todo remove */
 		/* 128/256/512 MB NAND flash.
 		 * ECC settings must match with the bootloader. */
-		nand0: nand@60000000 {
-			nand-bus-width = <8>;
-			nand-ecc-mode = "hw";
-			atmel,has-pmecc;
-			atmel,pmecc-cap = <8>;
-			atmel,pmecc-sector-size = <512>;
-			nand-on-flash-bbt;
+		/* nand0: nand@60000000 { */
+		/* 	nand-bus-width = <8>; */
+		/* 	nand-ecc-mode = "hw"; */
+		/* 	atmel,has-pmecc; */
+		/* 	atmel,pmecc-cap = <8>; */
+		/* 	atmel,pmecc-sector-size = <512>; */
+		/* 	nand-on-flash-bbt; */
+		/* 	status = "okay"; */
+
+		/* 	/\* mtd0: 128 KB (1 block) for bootloader. *\/ */
+		/* 	bootloader@0 { */
+		/* 		label = "bootloader"; */
+		/* 		reg = <0x00000000 0x00020000>;	/\* 128 KB *\/ */
+		/* 	}; */
+
+		/* 	/\* mtd1: Almost 8 MB (63 blocks) for kernel+initramfs. *\/ */
+		/* 	kernel@20000 { */
+		/* 		label = "kernel"; */
+		/* 		reg = <0x00020000 0x007E0000>;	/\* 8064 KB *\/ */
+		/* 	}; */
+
+		/* 	/\* mtd2: The rest (120/248/504 MB) for UBI. This */
+		/* 	 * normally contains one volume called "rootfs". */
+		/* 	 * */
+		/* 	 * The magic value MTDPART_SIZ_FULL (0) isn't mentioned */
+		/* 	 * in the devicetree binding docs, but it works. With */
+		/* 	 * this you don't need separate .dtb files for */
+		/* 	 * different NAND flash sizes. *\/ */
+		/* 	ubi0@800000 { */
+		/* 		label = "ubi0"; */
+		/* 		reg = <0x00800000 0x00000000>;	/\* MTDPART_SIZ_FULL *\/ */
+		/* 	}; */
+		/* }; */
+                ebi@10000000 {
+			pinctrl-0 = <&pinctrl_ebi_addr &pinctrl_ebi_cs0>;
+			pinctr-name = "default";
 			status = "okay";
 
-			/* mtd0: 128 KB (1 block) for bootloader. */
-			bootloader@0 {
-				label = "bootloader";
-				reg = <0x00000000 0x00020000>;	/* 128 KB */
+			nor: flash@0,0 {
+				compatible = "cfi-flash";
+				linux,mtd-name = "physmap-flash.0";
+				#address-cells = <1>;
+				#size-cells = <1>;
+				reg = <0x0 0x0 0x1000000>;
+				bank-width = <2>;
+				atmel,smc-read-mode = "nrd";
+				atmel,smc-write-mode = "nwe";
+				atmel,smc-bus-width = <16>;
+				atmel,smc-ncs-rd-setup-ns = <0>;
+				atmel,smc-ncs-wr-setup-ns = <0>;
+				atmel,smc-nwe-setup-ns = <8>;
+				atmel,smc-nrd-setup-ns = <16>;
+				atmel,smc-ncs-rd-pulse-ns = <84>;
+				atmel,smc-ncs-wr-pulse-ns = <84>;
+				atmel,smc-nrd-pulse-ns = <76>;
+				atmel,smc-nwe-pulse-ns = <76>;
+				atmel,smc-nrd-cycle-ns = <107>;
+				atmel,smc-nwe-cycle-ns = <84>;
+				atmel,smc-tdf-ns = <16>;
 			};
 
-			/* mtd1: Almost 8 MB (63 blocks) for kernel+initramfs. */
-			kernel@20000 {
-				label = "kernel";
-				reg = <0x00020000 0x007E0000>;	/* 8064 KB */
-			};
+			nand_controller: nand-controller {
+				status = "okay";
 
-			/* mtd2: The rest (120/248/504 MB) for UBI. This
-			 * normally contains one volume called "rootfs".
-			 *
-			 * The magic value MTDPART_SIZ_FULL (0) isn't mentioned
-			 * in the devicetree binding docs, but it works. With
-			 * this you don't need separate .dtb files for
-			 * different NAND flash sizes. */
-			ubi0@800000 {
-				label = "ubi0";
-				reg = <0x00800000 0x00000000>;	/* MTDPART_SIZ_FULL */
+				nand@3 {
+					reg = <0x3 0x0 0x2>;
+					atmel,rb = <0>;
+					nand-ecc-mode = "hw";
+					nand-ecc-strength = <4>;
+					nand-ecc-step-size = <512>;
+					nand-on-flash-bbt;
+					label = "atmel_nand";
+
+					partitions {
+						compatible = "fixed-partitions";
+						#address-cells = <1>;
+						#size-cells = <1>;
+
+			                        /* mtd0: 128 KB (1 block) for bootloader. */
+			                        bootloader@0 {
+				                        label = "bootloader";
+				                        reg = <0x00000000 0x00020000>;	/* 128 KB */
+			                        };
+                                                
+			                        /* mtd1: Almost 8 MB (63 blocks) for kernel+initramfs. */
+			                        kernel@20000 {
+				                        label = "kernel";
+				                        reg = <0x00020000 0x007E0000>;	/* 8064 KB */
+			                        };
+                                                
+			                        /* mtd2: The rest (120/248/504 MB) for UBI. This
+			                        * normally contains one volume called "rootfs".
+			                        *
+			                        * The magic value MTDPART_SIZ_FULL (0) isn't mentioned
+			                        * in the devicetree binding docs, but it works. With
+			                        * this you don't need separate .dtb files for
+			                        * different NAND flash sizes. */
+			                        ubi0@800000 {
+				                        label = "ubi0";
+				                        reg = <0x00800000 0x00000000>;	/* MTDPART_SIZ_FULL */
+			                        };
+					};
+				};
 			};
-		};
+		};                
 	};
 };
