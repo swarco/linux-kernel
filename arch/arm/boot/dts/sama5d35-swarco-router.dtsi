@@ -154,29 +154,72 @@
 			spi1: spi@f8008000 {
 				/* The default pinctrl_spi1 covers SPCK, MISO, MOSI.
 				 * Chip select is GPIO which does not need pinctrl. */
-				cs-gpios = <&pioC 25 0>;
+				pinctrl-0 = <&pinctrl_spi_ksz>;
+                                cs-gpios = <&pioC 25 0>;
 				status = "okay";
+                                id = <1>;
 
-				ksz87x5_spi@0 {
-					/* Micrel KSZ8795 / KSZ8765 5-port switch */
-					compatible = "micrel,ksz8765";
-					reg = <0>;
-					reset-gpios = <&pioE 15 GPIO_ACTIVE_LOW>;
-					spi-max-frequency = <50000000>;
-					#address-cells = <1>;
-					#size-cells = <0>;
+				/* ksz87x5_spi@0 { */
+				/* 	/\* Micrel KSZ8795 / KSZ8765 5-port switch *\/ */
+				/* 	compatible = "micrel,ksz8765"; */
+				/* 	reg = <0>; */
+				/* 	reset-gpios = <&pioE 15 GPIO_ACTIVE_LOW>; */
+				/* 	spi-max-frequency = <50000000>; */
+				/* 	#address-cells = <1>; */
+				/* 	#size-cells = <0>; */
 					
-					ports {
-						#address-cells = <1>;
-						#size-cells = <0>;
+				/* 	ports { */
+				/* 		#address-cells = <1>; */
+				/* 		#size-cells = <0>; */
 
-						port4@4 {
-							reg = <4>;
-							label = "cpu";
-							ethernet = <&macb0>;
-						};
-					};
-				};
+				/* 		port4@4 { */
+				/* 			reg = <4>; */
+				/* 			label = "cpu"; */
+				/* 			ethernet = <&macb0>; */
+				/* 		}; */
+				/* 	}; */
+				/* }; */
+		                ksz8795: ksz8795@0 {
+                                        /* Micrel KSZ8795  5-port switch */
+			                compatible = "microchip,ksz8795";
+			                reg = <0>;
+                                        reset-gpios = <&pioE 15 GPIO_ACTIVE_LOW>; 
+			                spi-max-frequency = <30000000>;
+			                spi-cpha;
+			                spi-cpol;
+                                        /* status = "disabled"; */
+			                ports {
+				                #address-cells = <1>;
+				                #size-cells = <0>;
+				                port@0 {
+					                reg = <0>;
+					                label = "lan1";
+				                };
+				                port@1 {
+					                reg = <1>;
+					                label = "lan2";
+				                };
+				                port@2 {
+					                reg = <2>;
+					                label = "lan3";
+				                };
+				                port@3 {
+					                reg = <3>;
+					                label = "lan4";
+				                };
+				                port@4 {
+					                reg = <6>;
+					                /* reg = <4>; */
+					                label = "cpu";
+					                ethernet = <&macb0>;
+					                fixed-link {
+						                speed = <1000>;
+						                full-duplex;
+					                };
+				                };
+			                };
+		                };
+                                
 			};
 
 			/* Watchdog */
@@ -224,6 +267,12 @@
 							 AT91_PIOB 11 AT91_PERIPH_A AT91_PINCTRL_NONE   /* PB11 periph A GRXCK, conflicts with RD1 */
 							 AT91_PIOB 13 AT91_PERIPH_A AT91_PINCTRL_NONE   /* PB13 periph A GRXER, conflicts with PWML3 */
 							 AT91_PIOB 18 AT91_PERIPH_A AT91_PINCTRL_NONE>; /* PB18 periph A G125CK */
+					};
+
+                                        /* 2020-09-21 gc:  */
+                                        pinctrl_spi_ksz: spi_ksz {
+						atmel,pins =
+							<AT91_PIOB 28 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
 					};
 
 					/* GPIOs for modem 3G/4G ID. GPI with pullup. */
@@ -302,29 +351,6 @@
 			pinctr-name = "default";
 			status = "okay";
 
-			nor: flash@0,0 {
-				compatible = "cfi-flash";
-				linux,mtd-name = "physmap-flash.0";
-				#address-cells = <1>;
-				#size-cells = <1>;
-				reg = <0x0 0x0 0x1000000>;
-				bank-width = <2>;
-				atmel,smc-read-mode = "nrd";
-				atmel,smc-write-mode = "nwe";
-				atmel,smc-bus-width = <16>;
-				atmel,smc-ncs-rd-setup-ns = <0>;
-				atmel,smc-ncs-wr-setup-ns = <0>;
-				atmel,smc-nwe-setup-ns = <8>;
-				atmel,smc-nrd-setup-ns = <16>;
-				atmel,smc-ncs-rd-pulse-ns = <84>;
-				atmel,smc-ncs-wr-pulse-ns = <84>;
-				atmel,smc-nrd-pulse-ns = <76>;
-				atmel,smc-nwe-pulse-ns = <76>;
-				atmel,smc-nrd-cycle-ns = <107>;
-				atmel,smc-nwe-cycle-ns = <84>;
-				atmel,smc-tdf-ns = <16>;
-			};
-
 			nand_controller: nand-controller {
 				status = "okay";
 
@@ -332,7 +358,7 @@
 					reg = <0x3 0x0 0x2>;
 					atmel,rb = <0>;
 					nand-ecc-mode = "hw";
-					nand-ecc-strength = <4>;
+					nand-ecc-strength = <8>;
 					nand-ecc-step-size = <512>;
 					nand-on-flash-bbt;
 					label = "atmel_nand";
