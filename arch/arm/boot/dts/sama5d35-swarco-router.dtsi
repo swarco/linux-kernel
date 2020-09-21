@@ -346,10 +346,8 @@
 		/* 		reg = <0x00800000 0x00000000>;	/\* MTDPART_SIZ_FULL *\/ */
 		/* 	}; */
 		/* }; */
-                ebi: ebi@60000000 { /* NAND has NCS3 */
-			/*
-                         * pinctrl-0 = <&pinctrl_ebi_addr &pinctrl_ebi_cs0>;
-                         */
+                ebi: ebi@10000000 { /* NAND has NCS3, which is not a GPIO */
+			pinctrl-0 = <&pinctrl_ebi_nand_addr>;
 			pinctr-name = "default";
 			status = "okay";
 
@@ -359,6 +357,7 @@
 				nand@3 {
 					reg = <0x3 0x0 0x2>;
 					atmel,rb = <0>;
+					nand-bus-width = <8>;
 					nand-ecc-mode = "hw";
 					nand-ecc-strength = <8>;
 					nand-ecc-step-size = <512>;
