@@ -19,41 +19,44 @@
 	ahb {
 		apb {
 			/* SPI */
-			spi1: spi@f8008000 {
-				ksz87x5_spi@0 {
-					/* Micrel KSZ8795 5-port switch */
-					compatible = "micrel,ksz8795";
-					
-					ports {
-						#address-cells = <1>;
-						#size-cells = <0>;
-
-						port0@0 {
-							/* Copper port */
-							reg = <0>;
-							label = "eth3";
-						};
-
-						port1@1 {
-							/* Copper port */
-							reg = <1>;
-							label = "eth4";
-						};
-
-						port2@2 {
-							/* Copper port */
-							reg = <2>;
-							label = "eth5";
-						};
-
-						port3@3 {
-							/* Copper port */
-							reg = <3>;
-							label = "eth2";
-						};
-					};
-				};
-			};
+			/*
+                         * spi1: spi@f8008000 {
+                         *         /\*  @todo split KSZ8795 config for SCC variants ethernet  /fiber *\/
+			 * 	ksz87x5_spi@0 {
+			 * 		/\* Micrel KSZ8795 5-port switch *\/
+			 * 		compatible = "micrel,ksz8795";
+			 * 		
+			 * 		ports {
+			 * 			#address-cells = <1>;
+			 * 			#size-cells = <0>;
+                         * 
+			 * 			port0@0 {
+			 * 				/\* Copper port *\/
+			 * 				reg = <0>;
+			 * 				label = "eth3";
+			 * 			};
+                         * 
+			 * 			port1@1 {
+			 * 				/\* Copper port *\/
+			 * 				reg = <1>;
+			 * 				label = "eth4";
+			 * 			};
+                         * 
+			 * 			port2@2 {
+			 * 				/\* Copper port *\/
+			 * 				reg = <2>;
+			 * 				label = "eth5";
+			 * 			};
+                         * 
+			 * 			port3@3 {
+			 * 				/\* Copper port *\/
+			 * 				reg = <3>;
+			 * 				label = "eth2";
+			 * 			};
+			 * 		};
+			 * 	};
+			 * };
+                         */
 		};
 	};
 };
