@@ -272,7 +272,7 @@
                                         /* 2020-09-21 gc: pioE 15 GPIO_ACTIVE_LOW */
                                         pinctrl_spi_ksz: spi_ksz {
 						atmel,pins =
-							<AT91_PIOC 15 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH> ; /* GMAC_RESET */
+							<AT91_PIOE 15 AT91_PERIPH_GPIO AT91_PINCTRL_NONE> ; /* GMAC_RESET */
 					};
 
 					/* GPIOs for modem 3G/4G ID. GPI with pullup. */
@@ -359,7 +359,7 @@
 					atmel,rb = <0>;
 					nand-bus-width = <8>;
 					nand-ecc-mode = "hw";
-					nand-ecc-strength = <8>;
+					nand-ecc-strength = <4>;
 					nand-ecc-step-size = <512>;
 					nand-on-flash-bbt;
 					label = "atmel_nand";
