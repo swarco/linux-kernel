@@ -154,10 +154,14 @@
 			spi1: spi@f8008000 {
 				/* The default pinctrl_spi1 covers SPCK, MISO, MOSI.
 				 * Chip select is GPIO which does not need pinctrl. */
-				pinctrl-0 = <&pinctrl_spi_ksz>;
-                                cs-gpios = <&pioC 25 0>;
+				/*
+                                 * pinctrl-0 = <&pinctrl_spi_ksz>;
+                                 */
+                                cs-gpios = <&pioC 25 GPIO_ACTIVE_LOW>;
 				status = "okay";
-                                id = <1>;
+                                /*
+                                 * id = <1>;
+                                 */
 
 				/* ksz87x5_spi@0 { */
 				/* 	/\* Micrel KSZ8795 / KSZ8765 5-port switch *\/ */
@@ -184,10 +188,13 @@
 			                compatible = "microchip,ksz8795";
 			                reg = <0>;
                                         reset-gpios = <&pioE 15 GPIO_ACTIVE_LOW>; 
-			                spi-max-frequency = <30000000>;
-			                spi-cpha;
-			                spi-cpol;
-                                        /* status = "disabled"; */
+			                spi-max-frequency = <50000000>;
+			                /*
+                                         * spi-cpha;
+			                 * spi-cpol;
+                                         */
+                                        status = "okay";
+
 			                ports {
 				                #address-cells = <1>;
 				                #size-cells = <0>;
@@ -208,8 +215,7 @@
 					                label = "lan4";
 				                };
 				                port@4 {
-					                reg = <6>;
-					                /* reg = <4>; */
+					                reg = <4>;
 					                label = "cpu";
 					                ethernet = <&macb0>;
 					                fixed-link {
