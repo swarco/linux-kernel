@@ -1268,7 +1268,11 @@ static int ksz8795_switch_init(struct ksz_device *dev)
 	}
 
 	/* set the real number of ports */
-	dev->ds->num_ports = dev->port_cnt;
+	/*
+	 * dev->ds->num_ports = dev->port_cnt;
+	 */
+	/* 2020-09-22 gc: fix use port number including the host port */
+	dev->ds->num_ports = dev->mib_port_cnt;
 
 	return 0;
 }
