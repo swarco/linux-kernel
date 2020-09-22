@@ -531,31 +531,39 @@ static int dsa_tree_setup(struct dsa_switch_tree *dst)
 	bool complete;
 	int err;
 
+	printk(KERN_INFO "-- dsa_tree_setup() #1 \n");
+
 	if (dst->setup) {
 		pr_err("DSA: tree %d already setup! Disjoint trees?\n",
 		       dst->index);
 		return -EEXIST;
 	}
 
+	printk(KERN_INFO "-- dsa_tree_setup() #2 \n");
 	complete = dsa_tree_setup_routing_table(dst);
 	if (!complete)
 		return 0;
+	printk(KERN_INFO "-- dsa_tree_setup() #3 \n");
 
 	err = dsa_tree_setup_default_cpu(dst);
 	if (err)
 		return err;
+	printk(KERN_INFO "-- dsa_tree_setup() #4 \n");
 
 	err = dsa_tree_setup_switches(dst);
 	if (err)
 		goto teardown_default_cpu;
+	printk(KERN_INFO "-- dsa_tree_setup() #5 \n");
 
 	err = dsa_tree_setup_master(dst);
 	if (err)
 		goto teardown_switches;
+	printk(KERN_INFO "-- dsa_tree_setup() #6 \n");
 
 	dst->setup = true;
 
 	pr_info("DSA: tree %d setup\n", dst->index);
+	printk(KERN_INFO "-- dsa_tree_setup() #7 \n");
 
 	return 0;
 
@@ -597,10 +605,11 @@ static int dsa_tree_add_switch(struct dsa_switch_tree *dst,
 {
 	unsigned int index = ds->index;
 	int err;
-
+	printk(KERN_INFO "-- dsa_tree_add_switch() #1 \n");
 	if (dst->ds[index])
 		return -EBUSY;
 
+	printk(KERN_INFO "-- dsa_tree_add_switch() #2 \n");
 	dsa_tree_get(dst);
 	dst->ds[index] = ds;
 
@@ -609,6 +618,7 @@ static int dsa_tree_add_switch(struct dsa_switch_tree *dst,
 		dst->ds[index] = NULL;
 		dsa_tree_put(dst);
 	}
+	printk(KERN_INFO "-- dsa_tree_add_switch() #3 %d \n", err);
 
 	return err;
 }
@@ -639,13 +649,17 @@ static int dsa_port_parse_cpu(struct dsa_port *dp, struct net_device *master)
 	enum dsa_tag_protocol tag_protocol;
 
 	tag_protocol = ds->ops->get_tag_protocol(ds, dp->index);
+	printk(KERN_INFO "-- dsa_port_parse_cpu()\n");
+
 	tag_ops = dsa_tag_driver_get(tag_protocol);
 	if (IS_ERR(tag_ops)) {
+		printk(KERN_INFO "-- dsa_port_parse_cpu() #ERROR\n");
 		if (PTR_ERR(tag_ops) == -ENOPROTOOPT)
 			return -EPROBE_DEFER;
 		dev_warn(ds->dev, "No tagger for this switch\n");
 		return PTR_ERR(tag_ops);
 	}
+	printk(KERN_INFO "-- dsa_port_parse_cpu() #2\n");
 
 	dp->type = DSA_PORT_TYPE_CPU;
 	dp->filter = tag_ops->filter;
@@ -662,23 +676,37 @@ static int dsa_port_parse_of(struct dsa_port *dp, struct device_node *dn)
 	struct device_node *ethernet = of_parse_phandle(dn, "ethernet", 0);
 	const char *name = of_get_property(dn, "label", NULL);
 	bool link = of_property_read_bool(dn, "link");
-
+	int ret;
+	
 	dp->dn = dn;
+	printk(KERN_INFO "-- dsa_port_parse_of() #1\n");
 
 	if (ethernet) {
+	printk(KERN_INFO "-- dsa_port_parse_of() #2\n");
 		struct net_device *master;
+		int ret;
 
 		master = of_find_net_device_by_node(ethernet);
 		if (!master)
 			return -EPROBE_DEFER;
+	printk(KERN_INFO "-- dsa_port_parse_of() #3\n");
 
-		return dsa_port_parse_cpu(dp, master);
+		ret =  dsa_port_parse_cpu(dp, master);
+		printk(KERN_INFO "-- dsa_port_parse_of() #4 %d\n, ret");
+		return ret;
+
 	}
 
-	if (link)
+	if (link) {
+		printk(KERN_INFO "-- dsa_port_parse_of() #5\n");
+		
 		return dsa_port_parse_dsa(dp);
+	}
+	printk(KERN_INFO "-- dsa_port_parse_of() #6\n");
 
-	return dsa_port_parse_user(dp, name);
+	ret = dsa_port_parse_user(dp, name);
+	printk(KERN_INFO "-- dsa_port_parse_of() #7\n" , ret);
+	return ret;
 }
 
 static int dsa_switch_parse_ports_of(struct dsa_switch *ds,
@@ -689,25 +717,33 @@ static int dsa_switch_parse_ports_of(struct dsa_switch *ds,
 	int err = 0;
 	u32 reg;
 
+	printk(KERN_INFO "-- dsa_switch_parse_ports_of() #1\n");
 	ports = of_get_child_by_name(dn, "ports");
 	if (!ports) {
 		dev_err(ds->dev, "no ports child node found\n");
 		return -EINVAL;
 	}
+	printk(KERN_INFO "-- dsa_switch_parse_ports_of() #2\n");
 
 	for_each_available_child_of_node(ports, port) {
 		err = of_property_read_u32(port, "reg", &reg);
 		if (err)
 			goto out_put_node;
+		printk(KERN_INFO "-- dsa_switch_parse_ports_of() #3 %d %d\n",
+		       reg, ds->num_ports);
+
 
 		if (reg >= ds->num_ports) {
 			err = -EINVAL;
 			goto out_put_node;
 		}
+		printk(KERN_INFO "-- dsa_switch_parse_ports_of() #4\n");
 
 		dp = &ds->ports[reg];
 
 		err = dsa_port_parse_of(dp, port);
+		printk(KERN_INFO "-- dsa_switch_parse_ports_of() #5 %d\n", err);
+
 		if (err)
 			goto out_put_node;
 	}
@@ -742,12 +778,16 @@ static int dsa_switch_parse_member_of(struct dsa_switch *ds,
 static int dsa_switch_parse_of(struct dsa_switch *ds, struct device_node *dn)
 {
 	int err;
+	printk(KERN_INFO "-- dsa_switch_parse_of() #1 \n");
 
 	err = dsa_switch_parse_member_of(ds, dn);
 	if (err)
 		return err;
 
-	return dsa_switch_parse_ports_of(ds, dn);
+	printk(KERN_INFO "-- dsa_switch_parse_of() #2 \n");
+	err =  dsa_switch_parse_ports_of(ds, dn);
+	printk(KERN_INFO "-- dsa_switch_parse_of() #3 %d \n",err);
+	return err;
 }
 
 static int dsa_port_parse(struct dsa_port *dp, const char *name,
@@ -830,6 +870,7 @@ static int dsa_switch_probe(struct dsa_switch *ds)
 	struct device_node *np = ds->dev->of_node;
 	int err;
 
+	printk(KERN_INFO "-- dsa_switch_probe(() #1 %x\n", np);
 	if (np)
 		err = dsa_switch_parse_of(ds, np);
 	else if (pdata)
@@ -837,9 +878,11 @@ static int dsa_switch_probe(struct dsa_switch *ds)
 	else
 		err = -ENODEV;
 
+	printk(KERN_INFO "-- dsa_switch_probe(() #3\n");
 	if (err)
 		return err;
 
+	printk(KERN_INFO "-- dsa_switch_probe(() #3\n");
 	return dsa_switch_add(ds);
 }
 
