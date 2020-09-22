@@ -359,7 +359,7 @@
 					atmel,rb = <0>;
 					nand-bus-width = <8>;
 					nand-ecc-mode = "hw";
-					nand-ecc-strength = <4>;
+					nand-ecc-strength = <8>;
 					nand-ecc-step-size = <512>;
 					nand-on-flash-bbt;
 					label = "atmel_nand";
