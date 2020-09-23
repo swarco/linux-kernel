@@ -1,0 +1,24 @@
+LPDDR SDRAM  : 256 MB
+NAND flash   : 512 MB (MICRON MT29F4G08ABADAWP)
+100M Ethernet: 40-48-fd-60-13-cb
+1G Ethernet  : 40-48-fd-60-13-cc
+Watchdog     : Enabled
+
+Press any key NOW to enter menu:
+
+Loading from flash...
+Error: No kernel is installed. Magic = 0xffffffff, expected 0x016f2818.
+
+Enter boot menu password:
+Wrong password.
+Enter boot menu password:
+Wrong password.
+Enter boot menu password: *******
+Wrong password.
+Enter boot menu password: *******
+Wrong password.
+Enter boot menu password:
+Wrong password.
+Enter boot menu password:
+Wrong password.
+Enter boot menu password: *
