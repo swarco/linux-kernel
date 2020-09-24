@@ -946,6 +946,9 @@ static void ksz8795_port_setup(struct ksz_device *dev, int port, bool cpu_port)
 
 		/* Configure MII interface for proper network communication. */
 		ksz_read8(dev, REG_PORT_5_CTRL_6, &data8);
+		printk(KERN_INFO "-- ksz8795_port_setup()#CPU %02x %d %s\n", data8, dev->interface,
+		       phy_modes(dev->interface));
+
 		data8 &= ~PORT_INTERFACE_TYPE;
 		data8 &= ~PORT_GMII_1GPS_MODE;
 		switch (p->interface) {
@@ -962,6 +965,7 @@ static void ksz8795_port_setup(struct ksz_device *dev, int port, bool cpu_port)
 			p->phydev.speed = SPEED_1000;
 			break;
 		default:
+			printk(KERN_INFO "-- ksz8795_port_setup()#CPU rgmi\n");
 			data8 &= ~PORT_RGMII_ID_IN_ENABLE;
 			data8 &= ~PORT_RGMII_ID_OUT_ENABLE;
 			if (p->interface == PHY_INTERFACE_MODE_RGMII_ID ||
