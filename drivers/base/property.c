@@ -772,6 +772,8 @@ int fwnode_get_phy_mode(struct fwnode_handle *fwnode)
 	int err, i;
 
 	err = fwnode_property_read_string(fwnode, "phy-mode", &pm);
+	printk(KERN_INFO "-- fwnode_get_phy_mode() %s\n", pm);
+
 	if (err < 0)
 		err = fwnode_property_read_string(fwnode,
 						  "phy-connection-type", &pm);
