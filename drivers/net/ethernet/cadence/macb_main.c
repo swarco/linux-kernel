@@ -3677,6 +3677,8 @@ static int macb_init(struct platform_device *pdev)
 	bp->tx_ring_size = DEFAULT_TX_RING_SIZE;
 	bp->rx_ring_size = DEFAULT_RX_RING_SIZE;
 
+	printk(KERN_INFO "-- macb_init()#1 %d %s\n",  bp->phy_interface,
+	       phy_modes(bp->phy_interface));
 	/* set the queue register mapping once for all: queue0 has a special
 	 * register mapping but we don't want to test the queue index then
 	 * compute the corresponding register offset at run time.
@@ -3794,6 +3796,8 @@ static int macb_init(struct platform_device *pdev)
 			bp->max_tuples = 0;
 	}
 
+	printk(KERN_INFO "-- macb_init()#2 %d %s\n",  bp->phy_interface,
+	       phy_modes(bp->phy_interface));
 	if (!(bp->caps & MACB_CAPS_USRIO_DISABLED)) {
 		val = 0;
 		if (phy_interface_mode_is_rgmii(bp->phy_interface))
