@@ -136,7 +136,8 @@
 			 * The KSZ87x5 is managed through SPI interface. */
 			macb0: ethernet@f0028000 {
 				pinctrl-0 = <&pinctrl_macb0_data_rgmii &pinctrl_macb0_signal_rgmii_nomdio>;
-				phy-mode = "rgmii-id";
+				phy-mode = "rgmii";
+				#phy-mode = "rgmii-id";
 				#address-cells = <1>;
 				#size-cells = <0>;
 				status = "okay";
@@ -218,6 +219,7 @@
 					                reg = <4>;
 					                label = "cpu";
 					                ethernet = <&macb0>;
+				                        phy-mode = "rgmii-id";
 					                fixed-link {
 						                speed = <1000>;
 						                full-duplex;
