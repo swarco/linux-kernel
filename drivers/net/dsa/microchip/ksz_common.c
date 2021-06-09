@@ -397,10 +397,13 @@ int ksz_switch_register(struct ksz_device *dev,
 		return PTR_ERR(dev->reset_gpio);
 
 	if (dev->reset_gpio) {
+		printk(KERN_INFO "-- ksz8795_reset() 1\n");
 		gpiod_set_value_cansleep(dev->reset_gpio, 1);
 		usleep_range(10000, 12000);
 		gpiod_set_value_cansleep(dev->reset_gpio, 0);
 		msleep(100);
+		printk(KERN_INFO "-- ksz8795_reset() 0\n");
+		mdelay(1000);
 	}
 
 	mutex_init(&dev->dev_mutex);
@@ -412,11 +415,13 @@ int ksz_switch_register(struct ksz_device *dev,
 
 	if (dev->dev_ops->detect(dev))
 		return -EINVAL;
+	printk(KERN_INFO "-- ksz_switch_register() #1\n");
 
 	ret = dev->dev_ops->init(dev);
 	if (ret)
 		return ret;
 
+	printk(KERN_INFO "-- ksz_switch_register() #2\n");
 	/* Host port interface will be self detected, or specifically set in
 	 * device tree.
 	 */
@@ -440,12 +445,14 @@ int ksz_switch_register(struct ksz_device *dev,
 		dev->synclko_125 = of_property_read_bool(dev->dev->of_node,
 							 "microchip,synclko-125");
 	}
+	printk(KERN_INFO "-- ksz_switch_register() #3\n");
 
 	ret = dsa_register_switch(dev->ds);
 	if (ret) {
 		dev->dev_ops->exit(dev);
 		return ret;
 	}
+	printk(KERN_INFO "-- ksz_switch_register() #4\n");
 
 	/* Read MIB counters every 30 seconds to avoid overflow. */
 	dev->mib_read_interval = msecs_to_jiffies(30000);

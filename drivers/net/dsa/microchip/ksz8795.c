@@ -1139,8 +1139,14 @@ static int ksz8795_switch_detect(struct ksz_device *dev)
 	u16 id16;
 	int ret;
 
+	{
+		u8 val = 0;
+
+		printk(KERN_INFO "-- read_id()#3 %d %02x\n", ksz_read8(dev, REG_CHIP_ID0, &val), val);;
+	}
 	/* read chip id */
 	ret = ksz_read16(dev, REG_CHIP_ID0, &id16);
+	printk(KERN_INFO "-- read_id16()#4 %d %02x\n",ret, id16);;
 	if (ret)
 		return ret;
 
@@ -1149,6 +1155,7 @@ static int ksz8795_switch_detect(struct ksz_device *dev)
 	if (id1 != FAMILY_ID ||
 	    (id2 != CHIP_ID_94 && id2 != CHIP_ID_95))
 		return -ENODEV;
+	printk(KERN_INFO "-- ksz8795_switch_detect() #1\n");
 
 	dev->mib_port_cnt = TOTAL_PORT_NUM;
 	dev->phy_port_cnt = SWITCH_PORT_NUM;
@@ -1221,6 +1228,7 @@ static int ksz8795_switch_init(struct ksz_device *dev)
 	int i;
 
 	dev->ds->ops = &ksz8795_switch_ops;
+	printk(KERN_INFO "-- ksz8795_switch_init() id = %d\n", dev->chip_id);
 
 	for (i = 0; i < ARRAY_SIZE(ksz8795_switch_chips); i++) {
 		const struct ksz_chip_data *chip = &ksz8795_switch_chips[i];
@@ -1236,11 +1244,13 @@ static int ksz8795_switch_init(struct ksz_device *dev)
 			break;
 		}
 	}
+	printk(KERN_INFO "-- ksz8795_switch_init() #1\n");
 
 	/* no switch found */
 	if (!dev->cpu_ports)
 		return -ENODEV;
 
+	printk(KERN_INFO "-- ksz8795_switch_init() #2\n");
 	dev->port_mask = BIT(dev->port_cnt) - 1;
 	dev->port_mask |= dev->host_mask;
 
@@ -1252,6 +1262,8 @@ static int ksz8795_switch_init(struct ksz_device *dev)
 				  GFP_KERNEL);
 	if (!dev->ports)
 		return -ENOMEM;
+	printk(KERN_INFO "-- ksz8795_switch_init() #3\n");
+
 	for (i = 0; i < dev->mib_port_cnt; i++) {
 		mutex_init(&dev->ports[i].mib.cnt_mutex);
 		dev->ports[i].mib.counters =
@@ -1262,6 +1274,7 @@ static int ksz8795_switch_init(struct ksz_device *dev)
 		if (!dev->ports[i].mib.counters)
 			return -ENOMEM;
 	}
+	printk(KERN_INFO "-- ksz8795_switch_init() #4\n");
 
 	/* set the real number of ports */
 	dev->ds->num_ports = dev->port_cnt + 1;
