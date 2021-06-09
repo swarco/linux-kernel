@@ -947,13 +947,13 @@ static void ksz8795_port_setup(struct ksz_device *dev, int port, bool cpu_port)
 		/* Configure MII interface for proper network communication. */
 		ksz_read8(dev, REG_PORT_5_CTRL_6, &data8);
 		
-		printk(KERN_INFO "-- ksz8795_port_setup()#CPU %02x %d %s\n", data8, dev->interface,
-		       phy_modes(dev->interface));
-		if (dev->interface == PHY_INTERFACE_MODE_NA) {
-			dev->interface = PHY_INTERFACE_MODE_RGMII_ID;
+		printk(KERN_INFO "-- ksz8795_port_setup()#CPU %02x %d %s\n", data8, dev->compat_interface,
+		       phy_modes(p->interface));
+		if (p->interface == PHY_INTERFACE_MODE_NA) {
+			p->interface = PHY_INTERFACE_MODE_RGMII_ID;
 		}
-		printk(KERN_INFO "-- ksz8795_port_setup()#CPU %02x %d %s\n", data8, dev->interface,
-		       phy_modes(dev->interface));
+		printk(KERN_INFO "-- ksz8795_port_setup()#CPU %02x %d %s\n", data8, dev->compat_interface,
+		       phy_modes(p->interface));
 
 		data8 &= ~PORT_INTERFACE_TYPE;
 		data8 &= ~PORT_GMII_1GPS_MODE;

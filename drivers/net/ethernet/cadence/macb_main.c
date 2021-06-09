@@ -4605,7 +4605,7 @@ static int macb_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "Error of_phy_find_device()\n");
 			goto err_out_free_netdev;	/* @@ Should also unregister fixed link? */
 		}
-		err = phy_connect_direct(dev, dev->phydev, &macb_handle_link_change, bp->phy_interface);
+		err = phylink_connect_phy(bp->phylink, dev->phydev);
 		if (err) {
 			dev_err(&pdev->dev, "Error phy_connect_direct %d\n", err);
 			goto err_out_free_netdev;	/* @@ Should also unregister fixed link? */
