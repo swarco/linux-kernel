@@ -4592,26 +4592,28 @@ static int macb_probe(struct platform_device *pdev)
 	if (err)
 		goto err_out_free_netdev;
 
-	if (of_phy_is_fixed_link(np)) {
-		printk(KERN_INFO "-- macb_probe() #fixed_link\n");
-
-		err = of_phy_register_fixed_link(np);
-		if (err < 0) {
-			dev_err(&pdev->dev, "Cannot register fixed PHY\n");
-			goto err_out_free_netdev;
-		}
-		dev->phydev = of_phy_find_device(np);
-		if (dev->phydev == NULL) {
-			dev_err(&pdev->dev, "Error of_phy_find_device()\n");
-			goto err_out_free_netdev;	/* @@ Should also unregister fixed link? */
-		}
-		err = phylink_connect_phy(bp->phylink, dev->phydev);
-		if (err) {
-			dev_err(&pdev->dev, "Error phy_connect_direct %d\n", err);
-			goto err_out_free_netdev;	/* @@ Should also unregister fixed link? */
-		}
-		printk(KERN_INFO "-- macb_probe() #fixed_link Okay\n");
-	} else {
+	/* if (of_phy_is_fixed_link(np)) {
+	 * 	printk(KERN_INFO "-- macb_probe() #fixed_link\n");
+	 * 
+	 * 	err = of_phy_register_fixed_link(np);
+	 * 	if (err < 0) {
+	 * 		dev_err(&pdev->dev, "Cannot register fixed PHY\n");
+	 * 		goto err_out_free_netdev;
+	 * 	}
+	 * 	dev->phydev = of_phy_find_device(np);
+	 * 	if (dev->phydev == NULL) {
+	 * 		dev_err(&pdev->dev, "Error of_phy_find_device()\n");
+	 * 		goto err_out_free_netdev;	/\* @@ Should also unregister fixed link? *\/
+	 * 	}
+	 * 	/\*
+	 * 	 * err = phylink_connect_phy(bp->phylink, dev->phydev);
+	 * 	 * if (err) {
+	 * 	 * 	dev_err(&pdev->dev, "Error phy_connect_direct %d\n", err);
+	 * 	 * 	goto err_out_free_netdev;	/\\* @@ Should also unregister fixed link? *\\/
+	 * 	 * }
+	 * 	 *\/
+	 * 	printk(KERN_INFO "-- macb_probe() #fixed_link Okay\n");
+	 * } else */ {
 		err = macb_mii_init(bp);
 		if (err)
 			goto err_out_free_netdev;
