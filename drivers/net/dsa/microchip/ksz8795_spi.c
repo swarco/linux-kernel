@@ -92,7 +92,7 @@ static int ksz8795_spi_probe(struct spi_device *spi)
 		dev->pdata = spi->dev.platform_data;
 
 	ret = ksz8795_switch_register(dev);
-	printk(KERN_INFO "-- ksz8795_spi_probe() #4\n");
+	printk(KERN_INFO "-- ksz8795_spi_probe() #4 ret=%d\n", ret);
 	{
 		u8 val = 0;
 
