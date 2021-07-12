@@ -68,7 +68,6 @@ static void fixed_phy_update(struct fixed_phy *fp)
 {
 	if (!fp->no_carrier && fp->link_gpiod)
 		fp->status.link = !!gpiod_get_value_cansleep(fp->link_gpiod);
-	printk(KERN_INFO "-- fixed_phy_update()# link: %d \n", fp->status.link);
 }
 
 static int fixed_mdio_read(struct mii_bus *bus, int phy_addr, int reg_num)
