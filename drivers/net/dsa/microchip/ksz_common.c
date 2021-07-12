@@ -72,7 +72,7 @@ static void ksz_mib_read_work(struct work_struct *work)
 	struct ksz_port *p;
 	int i;
 
-	for (i = 0; i < dev->port_cnt; i++) {
+	for (i = 0; i < dev->mib_port_cnt; i++) {
 		if (dsa_is_unused_port(dev->ds, i))
 			continue;
 
@@ -103,7 +103,7 @@ void ksz_init_mib_timer(struct ksz_device *dev)
 
 	INIT_DELAYED_WORK(&dev->mib_read, ksz_mib_read_work);
 
-	for (i = 0; i < dev->port_cnt; i++)
+	for (i = 0; i < dev->mib_port_cnt; i++)
 		dev->dev_ops->port_init_cnt(dev, i);
 }
 EXPORT_SYMBOL_GPL(ksz_init_mib_timer);
@@ -213,6 +213,15 @@ void ksz_port_fast_age(struct dsa_switch *ds, int port)
 }
 EXPORT_SYMBOL_GPL(ksz_port_fast_age);
 
+int ksz_port_vlan_prepare(struct dsa_switch *ds, int port,
+			  const struct switchdev_obj_port_vlan *vlan)
+{
+	/* nothing needed */
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(ksz_port_vlan_prepare);
+
 int ksz_port_fdb_dump(struct dsa_switch *ds, int port, dsa_fdb_dump_cb_t *cb,
 		      void *data)
 {
@@ -244,8 +253,16 @@ int ksz_port_fdb_dump(struct dsa_switch *ds, int port, dsa_fdb_dump_cb_t *cb,
 }
 EXPORT_SYMBOL_GPL(ksz_port_fdb_dump);
 
-int ksz_port_mdb_add(struct dsa_switch *ds, int port,
-		     const struct switchdev_obj_port_mdb *mdb)
+int ksz_port_mdb_prepare(struct dsa_switch *ds, int port,
+			 const struct switchdev_obj_port_mdb *mdb)
+{
+	/* nothing to do */
+	return 0;
+}
+EXPORT_SYMBOL_GPL(ksz_port_mdb_prepare);
+
+void ksz_port_mdb_add(struct dsa_switch *ds, int port,
+		      const struct switchdev_obj_port_mdb *mdb)
 {
 	struct ksz_device *dev = ds->priv;
 	struct alu_struct alu;
@@ -267,7 +284,7 @@ int ksz_port_mdb_add(struct dsa_switch *ds, int port,
 
 	/* no available entry */
 	if (index == dev->num_statics && !empty)
-		return -ENOSPC;
+		return;
 
 	/* add entry */
 	if (index == dev->num_statics) {
@@ -284,8 +301,6 @@ int ksz_port_mdb_add(struct dsa_switch *ds, int port,
 		alu.fid = mdb->vid;
 	}
 	dev->dev_ops->w_sta_mac_table(dev, index, &alu);
-
-	return 0;
 }
 EXPORT_SYMBOL_GPL(ksz_port_mdb_add);
 
@@ -378,14 +393,18 @@ int ksz_switch_register(struct ksz_device *dev,
 
 	dev->reset_gpio = devm_gpiod_get_optional(dev->dev, "reset",
 						  GPIOD_OUT_LOW);
+	printk(KERN_INFO "-- ksz_switch_register() ##\n");
 	if (IS_ERR(dev->reset_gpio))
 		return PTR_ERR(dev->reset_gpio);
 
 	if (dev->reset_gpio) {
+		printk(KERN_INFO "-- ksz8795_reset() 1\n");
 		gpiod_set_value_cansleep(dev->reset_gpio, 1);
 		usleep_range(10000, 12000);
 		gpiod_set_value_cansleep(dev->reset_gpio, 0);
 		msleep(100);
+		printk(KERN_INFO "-- ksz8795_reset() 0\n");
+		mdelay(1000);
 	}
 
 	mutex_init(&dev->dev_mutex);
@@ -395,13 +414,16 @@ int ksz_switch_register(struct ksz_device *dev,
 
 	dev->dev_ops = ops;
 
+	printk(KERN_INFO "-- ksz_switch_register() #0\n");
 	if (dev->dev_ops->detect(dev))
 		return -EINVAL;
+	printk(KERN_INFO "-- ksz_switch_register() #1\n");
 
 	ret = dev->dev_ops->init(dev);
 	if (ret)
 		return ret;
 
+	printk(KERN_INFO "-- ksz_switch_register() #2\n");
 	/* Host port interface will be self detected, or specifically set in
 	 * device tree.
 	 */
@@ -411,15 +433,14 @@ int ksz_switch_register(struct ksz_device *dev,
 		ret = of_get_phy_mode(dev->dev->of_node, &interface);
 		if (ret == 0)
 			dev->compat_interface = interface;
-		ports = of_get_child_by_name(dev->dev->of_node, "ethernet-ports");
-		if (!ports)
-			ports = of_get_child_by_name(dev->dev->of_node, "ports");
+		ports = of_get_child_by_name(dev->dev->of_node, "ports");
 		if (ports)
 			for_each_available_child_of_node(ports, port) {
 				if (of_property_read_u32(port, "reg",
 							 &port_num))
 					continue;
-				if (!(dev->port_mask & BIT(port_num)))
+				printk(KERN_INFO "-- ksz_switch_register() #port_num = %d, port_cnt=%d, mib_port_cnt=%d\n", port_num, dev->port_cnt, dev->mib_port_cnt);
+				if (port_num >= dev->mib_port_cnt)
 					return -EINVAL;
 				of_get_phy_mode(port,
 						&dev->ports[port_num].interface);
@@ -427,12 +448,14 @@ int ksz_switch_register(struct ksz_device *dev,
 		dev->synclko_125 = of_property_read_bool(dev->dev->of_node,
 							 "microchip,synclko-125");
 	}
+	printk(KERN_INFO "-- ksz_switch_register() #3\n");
 
 	ret = dsa_register_switch(dev->ds);
 	if (ret) {
 		dev->dev_ops->exit(dev);
 		return ret;
 	}
+	printk(KERN_INFO "-- ksz_switch_register() #4\n");
 
 	/* Read MIB counters every 30 seconds to avoid overflow. */
 	dev->mib_read_interval = msecs_to_jiffies(30000);
