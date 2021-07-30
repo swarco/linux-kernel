@@ -270,7 +270,18 @@ static inline void usba_cleanup_debugfs(struct usba_udc *udc)
 }
 #endif
 
-static ushort fifo_mode;
+/*
+ * 2021-07-30 gc: Set default value for atmel_usba_udc parameter
+ * fifo_mode to 1
+
+ * Only if this parameter is set to a value different from zero (=
+ * Autoconfiguration) the endpoint fifo sizes from the device tree
+ * will taken in account.
+
+ * The USB-Hub chip build into the SCC Air Mk II hardware requires a
+ * maximum fifo-size of 64. With larger sizes it will crash!
+ */
+static ushort fifo_mode = 1;
 
 module_param(fifo_mode, ushort, 0x0);
 MODULE_PARM_DESC(fifo_mode, "Endpoint configuration mode");
